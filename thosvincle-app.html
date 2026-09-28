@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Eina interna per crear qüestionaris de convivència i analitzar relacions de grup.">
-<title>THOSVINCLE · Sociograma de convivència</title>
+<title>SOCIO EMOCIOGRAMA INTERACTIU · CESC</title>
 <style>
 
 :root{--ink:#1e2b27;--muted:#68756c;--line:#e1e4d9;--paper:#f6f4ed;--white:#fffefa;--forest:#244e45;--green:#2b6b5a;--leaf:#e9f0e8;--clay:#ce7856;--shadow:0 12px 30px #253d3010}
@@ -21,7 +21,7 @@ details.card>summary{cursor:pointer;color:var(--forest);font-size:18px;font-weig
 </style>
 </head>
 <body>
-<header><h1>THOSVINCLE</h1><p>Una mirada relacional i emocional del grup classe, amb dades per explorar patrons i orientar el seguiment educatiu.</p></header>
+<header><h1>SOCIO EMOCIOGRAMA INTERACTIU</h1><p>Una mirada relacional i emocional del grup classe, amb dades per explorar patrons i orientar el seguiment educatiu.</p></header>
 <div class="privacy"><span class="privacy-mark" aria-hidden="true">🔒</span><div><strong>Processament local</strong><p class="privacy-copy">El fitxer s’obre i s’analitza només en el teu navegador. <em>No s’envia a cap servidor ni es desa.</em> En tancar la pàgina o prémer «Buidar», les dades carregades desapareixen.</p></div></div>
 <main>
 <section id="homeMenu"><div class="home-intro"><h2>Què vols fer?</h2><p>Tria una eina per començar. Cada opció s’obre en una pantalla pròpia.</p></div><div class="menu-grid"><button class="menu-card" data-open="create"><span class="menu-eyebrow">01 · Preparar grup</span><span class="menu-icon"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="5" y="4" width="18" height="24" rx="3" stroke="currentColor" stroke-width="2"/><path d="M10 11h8M10 16h5M10 21h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M23 19l4 4-5 5-4-4 5-5z" fill="#ce7856" stroke="currentColor" stroke-width="1.5"/></svg></span><h2>Crear qüestionari</h2><p>Importa la llista d’una classe i prepara l’enquesta de Moodle amb els noms del grup a les preguntes de nominació.</p><span class="menu-cta">Preparar una classe <b aria-hidden="true">→</b></span></button><button class="menu-card" data-open="analyze"><span class="menu-eyebrow">02 · Llegir resultats</span><span class="menu-icon"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><circle cx="8" cy="9" r="3" stroke="currentColor" stroke-width="2"/><circle cx="23" cy="7" r="3" stroke="currentColor" stroke-width="2"/><circle cx="16" cy="23" r="3" stroke="currentColor" stroke-width="2"/><path d="M11 9l9-1M9 12l5 8M21 10l-4 10" stroke="currentColor" stroke-width="2"/><path d="M24 19v-5m4 5v-9" stroke="#ce7856" stroke-width="2.5" stroke-linecap="round"/></svg></span><h2>Analitzar respostes</h2><p>Carrega l’exportació de Moodle i explora les nominacions amb un mapa de relacions i gràfics per blocs.</p><span class="menu-cta">Obrir l’anàlisi <b aria-hidden="true">→</b></span></button></div></section>
@@ -239,7 +239,7 @@ function generateXML(){
   add('multichoice','[H1]','r>>>>>Sí, vull parlar en privat.\n|Ara no ho necessito.',1,'h');
   return `<?xml version="1.0" encoding="UTF-8" ?>\n<FEEDBACK VERSION="200701" COMMENT="XML-Importfile for mod/feedback">\n  <ITEMS>\n${items.join('\n')}\n  </ITEMS>\n</FEEDBACK>\n`;
 }
-$('#makexml').addEventListener('click',()=>{try{const xml=generateXML(),blob=new Blob([xml],{type:'application/xml;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='THOSVINCLE_'+($('#groupname').value.trim().replace(/[^\p{L}\p{N}-]+/gu,'_')||'grup')+'.xml';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);status($('#classstatus'),'XML preparat. Importa’l a «Importa preguntes» dins de l’activitat Retroalimentació.','good')}catch(err){status($('#classstatus'),err.message,'error')}});
+$('#makexml').addEventListener('click',()=>{try{const xml=generateXML(),blob=new Blob([xml],{type:'application/xml;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='SOCIO_EMOCIOGRAMA_'+($('#groupname').value.trim().replace(/[^\p{L}\p{N}-]+/gu,'_')||'grup')+'.xml';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);status($('#classstatus'),'XML preparat. Importa’l a «Importa preguntes» dins de l’activitat Retroalimentació.','good')}catch(err){status($('#classstatus'),err.message,'error')}});
 function clearClass(){state.classRows=null;$('#classfile').value='';$('#classpreview').innerHTML='';$('#classpreview').classList.add('hidden');$('#classmap').classList.add('hidden');$('#makexml').disabled=true;$('#clearclass').disabled=true;status($('#classstatus'),'Les dades de la classe s’han buidat.')}$('#clearclass').addEventListener('click',clearClass);
 function resetAnalysisView(){
   state.reviewReady=false;
