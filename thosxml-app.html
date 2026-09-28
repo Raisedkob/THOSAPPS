@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Previsualitzador i Simulador Moodle XML</title>
+  <title>THOSXML — Visor i prevalidació Moodle XML</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -26,7 +26,7 @@
       <div class="flex items-center gap-3">
         <i class="fa-solid fa-graduation-cap text-3xl text-amber-300"></i>
         <div>
-          <h1 class="text-xl font-bold">Previsualitzador Moodle XML</h1>
+          <h1 class="text-xl font-bold">THOSXML · Visor i prevalidació Moodle XML</h1>
           <p class="text-xs text-blue-100">Visor Solucionari i Simulador d'Exàmens</p>
         </div>
       </div>
@@ -79,6 +79,7 @@
     </div>
 
     <!-- Marcador del Mode Simulador -->
+    <section id="xml-validation" class="hidden mt-4 rounded-xl border p-4" aria-live="polite"></section>
     <div id="sim-scorebar" class="hidden bg-slate-900 text-white p-4 rounded-xl shadow-md mt-4 flex flex-wrap items-center justify-between gap-4 border-l-4 border-amber-400">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-full bg-amber-400 text-slate-900 font-bold flex items-center justify-center text-lg shadow">
@@ -131,6 +132,7 @@
   <script>
     let currentMode = 'simulador';
     let rawQuestions = [];
+    let xmlValidation = { errors: [], questionCount: 0 };
     let userAnswers = {};
 
     function setMode(mode) {
@@ -170,12 +172,113 @@
       reader.readAsText(file);
     }
 
+    function validateQuestionStructure(node, type, questionName) {
+      const errors = [];
+      if (type === 'matching') {
+        const allSubquestions = Array.from(node.querySelectorAll('subquestion'));
+        const directSubquestions = Array.from(node.children).filter(child => child.tagName.toLowerCase() === 'subquestion');
+        const misplacedCount = allSubquestions.length - directSubquestions.length;
+        if (misplacedCount > 0) {
+          errors.push(`Estructura d'aparellament incompatible: ${misplacedCount} parella/es dins d'un embolcall o en una posició no admesa. Moodle espera cada <subquestion> directament dins de <question>.`);
+        }
+        directSubquestions.forEach((sub, index) => {
+          const prompt = Array.from(sub.children).find(child => child.tagName.toLowerCase() === 'text');
+          const answer = Array.from(sub.children).find(child => child.tagName.toLowerCase() === 'answer');
+          const answerText = answer ? answer.querySelector('text') : null;
+          if (!prompt || !prompt.textContent.trim()) errors.push(`Parella ${index + 1}: falta el text de l'enunciat.`);
+          if (!answerText || !answerText.textContent.trim()) errors.push(`Parella ${index + 1}: falta la resposta.`);
+        });
+      }
+
+      const files = Array.from(node.querySelectorAll('file'));
+      const fileRecords = files.map((file, index) => {
+        const name = (file.getAttribute('name') || '').trim();
+        const path = (file.getAttribute('path') || '/').replace(/\\/g, '/');
+        const key = `${path.replace(/^\/+|\/+$/g, '')}/${name}`.replace(/^\/+/, '').replace(/\/+/g, '/');
+        return { file, index, name, key, used: false };
+      });
+      const references = [];
+      const referencePattern = /@@PLUGINFILE@@\/([^\s"'<>?#)]+)/g;
+      const collectReferences = value => {
+        let match;
+        while ((match = referencePattern.exec(value || '')) !== null) {
+          let reference = match[1].replace(/&amp;/g, '&');
+          try { reference = decodeURIComponent(reference); } catch (_) {}
+          references.push(reference.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+/g, '/'));
+        }
+      };
+      const walker = node.ownerDocument.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) collectReferences(walker.currentNode.nodeValue);
+      Array.from(node.querySelectorAll('*')).forEach(element => {
+        Array.from(element.attributes).forEach(attribute => collectReferences(attribute.value));
+      });
+      const keysSeen = new Set();
+      fileRecords.forEach(record => {
+        if (keysSeen.has(record.key)) errors.push(`Hi ha més d'un fitxer incrustat amb la mateixa ruta: «${record.key}».`);
+        keysSeen.add(record.key);
+      });
+      references.forEach(reference => {
+        const matches = fileRecords.filter(record => record.key === reference);
+        if (matches.length === 0) {
+          errors.push(`Falta el fitxer incrustat corresponent a @@PLUGINFILE@@/${reference}.`);
+          return;
+        }
+        matches.forEach(record => {
+          record.used = true;
+          const encoding = (record.file.getAttribute('encoding') || '').toLowerCase();
+          if (encoding !== 'base64' || !record.file.textContent.trim()) {
+            errors.push(`El fitxer incrustat «${record.name}» no conté dades base64 vàlides.`);
+          }
+        });
+      });
+      fileRecords.forEach(record => {
+        if (!record.used) errors.push(`Fitxer incrustat sobrer i no referenciat: «${record.name || '(sense nom)'}».`);
+      });
+      return errors.map(message => ({ questionName, message }));
+    }
+
+    function renderValidationSummary() {
+      const panel = document.getElementById('xml-validation');
+      panel.replaceChildren();
+      const title = document.createElement('h2');
+      title.className = 'font-bold text-base';
+      title.textContent = xmlValidation.errors.length
+        ? `Prevalidació estructural: ${xmlValidation.errors.length} error/s d’importació detectat/s`
+        : 'Prevalidació estructural: no s’han detectat errors';
+      panel.appendChild(title);
+      const status = document.createElement('p');
+      status.className = 'text-sm mt-1';
+      status.textContent = `Visualització disponible: ${xmlValidation.questionCount} preguntes llegides. Això no confirma que Moodle l’importi correctament. Aquesta prevalidació és orientativa; la comprovació definitiva és importar-lo i previsualitzar-lo al Moodle real.`;
+      panel.appendChild(status);
+      if (xmlValidation.errors.length) {
+        const list = document.createElement('ul');
+        list.className = 'mt-3 space-y-1 list-disc pl-5 text-sm';
+        xmlValidation.errors.forEach(error => {
+          const item = document.createElement('li');
+          const label = document.createElement('strong');
+          label.textContent = `${error.questionName}: `;
+          item.append(label, document.createTextNode(error.message));
+          list.appendChild(item);
+        });
+        panel.appendChild(list);
+      }
+      panel.className = `mt-4 rounded-xl border p-4 ${xmlValidation.errors.length ? 'border-red-300 bg-red-50 text-red-900' : 'border-emerald-300 bg-emerald-50 text-emerald-900'}`;
+    }
+
     function parseXMLContent(xmlText) {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+      if (xmlDoc.querySelector('parsererror')) {
+        const panel = document.getElementById('xml-validation');
+        panel.textContent = 'No es pot visualitzar el fitxer: l’XML no està ben format. No s’ha modificat.';
+        panel.className = 'mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-red-900';
+        panel.classList.remove('hidden');
+        return;
+      }
       const questionNodes = xmlDoc.querySelectorAll("question");
 
       rawQuestions = [];
+      xmlValidation = { errors: [], questionCount: 0 };
       userAnswers = {};
 
       questionNodes.forEach((node, idx) => {
@@ -208,8 +311,13 @@
           answers: [],
           subquestions: []
         };
+        xmlValidation.questionCount++;
+        qData.validationErrors = validateQuestionStructure(node, type, qData.name);
+        xmlValidation.errors.push(...qData.validationErrors);
 
         if (type === 'matching') {
+          // La vista prèvia continua llegint també les parelles imbricades per ajudar a diagnosticar-les.
+          // La validació les marca com a incompatibles amb Moodle si no són filles directes de <question>.
           const subNodes = node.querySelectorAll("subquestion");
           const extraAnswerNodes = node.querySelectorAll(":scope > shuffleanswers");
           const extraAnswers = [];
@@ -255,6 +363,7 @@
 
       document.getElementById('upload-zone').classList.add('hidden');
       document.getElementById('app-controls').classList.remove('hidden');
+      renderValidationSummary();
       setMode('simulador');
     }
 
@@ -335,6 +444,10 @@
         let bodyHTML = `<div class="p-5">
           <div class="q-text text-sm text-slate-800 leading-relaxed font-medium mb-4">${q.text}</div>
         `;
+
+        if (q.validationErrors && q.validationErrors.length) {
+          bodyHTML += `<div class="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900"><strong>Error d’importació — ${q.validationErrors.length} incidència/es</strong><ul class="mt-1 list-disc pl-5">${q.validationErrors.map(error => `<li>${error.message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</li>`).join('')}</ul></div>`;
+        }
 
         if (currentMode === 'docent') {
           bodyHTML += renderDocentAnswers(q);
