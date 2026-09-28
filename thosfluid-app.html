@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THOSFLUID — Simulador pneumàtic</title>
+  <link rel="stylesheet" href="thosfluid/app.css">
+  <script src="thosfluid/app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="toolbar">
+      <div class="brand"><span class="brand-icon" aria-hidden="true">◈</span><span><strong>THOS</strong>FLUID</span><small>pneumàtica</small></div>
+      <div class="toolbar-scroll">
+        <div class="toolgroup" aria-label="Fitxer">
+          <button id="newBtn" title="Circuit nou">Nou</button>
+          <button id="openBtn" title="Obre un fitxer JSON del dispositiu">Obre</button>
+          <button id="saveBtn" title="Descarrega el circuit en un fitxer JSON">Desa</button>
+          <input id="fileInput" type="file" accept=".json,application/json" hidden>
+        </div>
+        <div class="toolgroup" aria-label="Edició">
+          <button id="undoBtn" title="Desfés (Ctrl+Z)">↶ <span>Desfés</span></button>
+          <button id="redoBtn" title="Refés (Ctrl+Y)">↷ <span>Refés</span></button>
+          <button id="deleteBtn" title="Esborra la selecció (Supr)">Esborra</button>
+        </div>
+        <div class="toolgroup" aria-label="Simulació">
+          <button id="simulateBtn" class="primary">▶ Simula</button>
+          <button id="resetBtn" title="Reinicia la simulació" disabled>Reinicia</button>
+        </div>
+        <div class="toolgroup" aria-label="Vista">
+          <button id="zoomOutBtn" title="Allunya">−</button>
+          <button id="zoomInBtn" title="Apropa">+</button>
+          <button id="fitBtn" title="Ajusta la vista">Ajusta</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="library" aria-label="Biblioteca de components">
+        <div class="aside-title"><span>Components</span><small>MVP pneumàtic</small></div>
+        <p class="aside-help">Tria un component i fes clic al llenç, o arrossega'l fins al llenç.</p>
+        <div id="libraryItems" class="library-items"></div>
+        <div class="library-footer">
+          <button id="exampleSimpleBtn">Exemple 3/2</button>
+          <button id="exampleDoubleBtn">Exemple 5/2</button>
+        </div>
+      </aside>
+
+      <section class="canvas-panel" aria-label="Editor de circuits">
+        <div class="canvas-top"><span id="modeLabel">Mode edició</span><span id="canvasHint">Clica dos ports per connectar-los.</span></div>
+        <svg id="circuitCanvas" viewBox="0 0 1200 700" role="group" aria-label="Llenç del circuit">
+          <defs><pattern id="grid" width="25" height="25" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#353535"/></pattern></defs>
+          <rect width="1200" height="700" fill="url(#grid)" data-background="1"></rect>
+          <g id="world"></g>
+        </svg>
+        <div class="legend"><span><i class="line pressure"></i> Pressió</span><span><i class="line exhaust"></i> Escapament</span><span><i class="line idle"></i> Sense pressió</span></div>
+      </section>
+
+      <aside class="inspector" aria-label="Estat i propietats">
+        <div class="aside-title"><span>Circuit</span><small id="circuitCount">0 components</small></div>
+        <label class="field-label" for="circuitName">Nom</label>
+        <input id="circuitName" class="text-field" type="text" maxlength="80" value="Circuit nou">
+        <div id="selectionPanel" class="selection-panel"><p>Selecciona un component per veure'n els ports i l'estat.</p></div>
+        <div class="section-divider"></div>
+        <label class="switch-row"><input id="backupToggle" type="checkbox"><span>Còpia de recuperació <small>Guarda només l'últim circuit en aquest navegador.</small></span></label>
+        <button id="clearBackupBtn" class="secondary wide">Esborra la còpia</button>
+        <div id="restorePanel" class="restore-panel" hidden>
+          <strong>Hi ha un circuit recuperable</strong><p>És una còpia local de l'última edició.</p><button id="restoreBtn" class="secondary wide">Recupera l'últim circuit</button>
+        </div>
+        <div class="section-divider"></div>
+        <p class="privacy-note">Els circuits es descarreguen al teu dispositiu. No s'envien a cap servidor.</p>
+      </aside>
+    </main>
+    <footer class="statusbar"><span id="statusText" role="status" aria-live="polite">A punt per dibuixar.</span><span id="zoomLabel">100%</span></footer>
+  </div>
+</body>
+</html>
