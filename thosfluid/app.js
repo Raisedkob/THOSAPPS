@@ -686,7 +686,7 @@ function drawSymbol(group, c, previousCylinderState) {
       const trigger = e => { e.stopPropagation(); if (!running) return; if (momentary && stepMode) runtime.pressed[c.id] = !runtime.pressed[c.id]; else if (momentary && activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } else if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; render(); };
       const release = e => { e.stopPropagation(); if (activeMomentaryId === c.id) releaseMomentary(); };
       button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
-      button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); trigger(e); } }); button.addEventListener("keyup", release);
+      button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat) trigger(e); } }); button.addEventListener("keyup", release);
     }
   } else if (["relayCoil", "relayContactNO", "relayContactNC"].includes(c.type)) {
     if (c.type === "relayCoil") { svg("path", { d: "M40 28q-15 22 0 44 M85 28q15 22 0 44 M40 28h45 M40 72h45", class: "symbol" }, group); svgText(group, 100, 55, c.properties?.relay || "K1", "sub"); }
@@ -831,7 +831,7 @@ function drawSymbol(group, c, previousCylinderState) {
     button.addEventListener("pointerdown", trigger);
     button.addEventListener("pointerup", release);
     button.addEventListener("pointercancel", release);
-    button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); trigger(e); } });
+    button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat) trigger(e); } });
     button.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") release(e); });
   } else if (c.type === "single" || c.type === "double") {
     svg("rect", { x: 20, y: 38, width: 130, height: 57, class: "norm-box" }, group);
@@ -967,7 +967,7 @@ function renderInspector() {
     const trigger = e => { e.preventDefault(); if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; else if (stepMode) runtime.pressed[c.id] = !runtime.pressed[c.id]; else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } render(); };
     const release = e => { e.preventDefault(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
-    button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") trigger(e); });
+    button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat) trigger(e); } });
     button.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") release(e); });
     panel.append(button);
   }
