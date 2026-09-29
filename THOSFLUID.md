@@ -37,9 +37,9 @@ La portada ha d'incloure una **targeta activa THOSFLUID** amb el mateix format 1
 
 ### MVP incorporat al repositori
 
-La primera versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. Permet col·locar i moure font d'aire, acumulador, unitat de manteniment, vàlvules 2/2 NC, 3/2, 4/2 i 5/2 i cilindres de simple i doble efecte, agrupats a la biblioteca per famílies; connectar ports, simular la pressió i l'escapament, accionar les vàlvules, veure el moviment del cilindre, desfer/refer, fer zoom, descarregar i obrir JSON, i activar una única còpia local de recuperació. L'acumulador i la unitat de manteniment deixen passar els estats lògics sense modelar acumulació, filtratge ni regulació física. La resta de components i l'electropneumàtica s'afegeixen en les fases següents. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
+La primera versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. Permet col·locar i moure font d'aire, acumulador, unitat de manteniment, regulador de cabal qualitatiu, vàlvules 2/2 NC, 3/2, 4/2 i 5/2 i cilindres de simple i doble efecte, agrupats a la biblioteca per famílies; connectar ports, simular la pressió i l'escapament, accionar les vàlvules, veure el moviment del cilindre, desfer/refer, fer zoom, descarregar i obrir JSON, i activar una única còpia local de recuperació. El regulador pot estar tancat, poc obert, a mitja obertura o obert: tancat bloqueja el pas i les altres posicions limiten només la velocitat visual de l'animació. L'acumulador i la unitat de manteniment deixen passar els estats lògics sense modelar acumulació, filtratge ni regulació física. La resta de components i l'electropneumàtica s'afegeixen en les fases següents. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
 
-**Límits del MVP:** nou tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; encara no hi ha pilotatges, finals de cursa ni temporitzadors. L'acumulador i la unitat de manteniment són passius al model qualitatiu. El cilindre de simple efecte retorna quan la cambra descarrega per una sortida oberta; si una 2/2 la tanca després d'haver avançat, conserva qualitativament l'estat estès. Els apartats següents descriuen l'objectiu complet de V1, no una llista de funcions ja disponibles.
+**Límits del MVP:** deu tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; encara no hi ha pilotatges, finals de cursa ni temporitzadors. L'acumulador i la unitat de manteniment són passius al model qualitatiu. El cilindre de simple efecte retorna quan la cambra descarrega per una sortida oberta; si una 2/2 la tanca després d'haver avançat, conserva qualitativament l'estat estès. Els apartats següents descriuen l'objectiu complet de V1, no una llista de funcions ja disponibles.
 
 El repositori actual publica pàgines HTML a l'arrel. `index.html` conté la navegació i les targetes de les eines; `thosdruino.html` és una aplicació en una sola pàgina; `thosvincle.html` és una pàgina d'entrada que integra `thosvincle-app.html` en un `iframe`. `sitemap.xml` enumera URL públiques. **Abans de programar, Codex ha de tornar a inspeccionar el repositori**, perquè la seva estructura pot haver canviat.
 
@@ -83,7 +83,7 @@ Els nivells orienten filtres i exemples, però no han de bloquejar components. E
 | Actuadors | Cilindre de simple efecte amb retorn per molla i de doble efecte, amb posicions extremes i moviment visible. |
 | Distribució | Vàlvules 2/2, 3/2, 4/2 i 5/2; posició de repòs, connexions internes per posició i variants normalment obertes/tancades quan pertoqui. 5/3 opcional després del MVP. |
 | Accionaments | Manuals: polsador, palanca i pedal, amb retorn per molla o posició mantinguda. Després: rodolí/èmbol mecànic i pilotatge pneumàtic. |
-| Regulació | Regulador de cabal qualitatiu i variant amb antiretorn, amb sentit regulat explícit. |
+| Regulació | Disponible: regulador de cabal qualitatiu tancat/poc/mitjà/obert. La posició tancada interromp el pas i les altres limiten la categoria de velocitat visual. Pendent: variant amb antiretorn i sentit regulat explícit. |
 | Pas i lògica | Antiretorn, vàlvules AND i OR pneumàtiques. |
 | Seqüència | Temporitzador pneumàtic de retard discret; finals de cursa vinculats als extrems dels cilindres. |
 
@@ -175,7 +175,7 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
 }
 ```
 
-Aquest és el format **v1 del MVP publicat**. Els tipus acceptats són `source`, `receiver`, `maintenance`, `valve2`, `valve3`, `valve4`, `valve5`, `single` i `double`. `receiver` i `maintenance` tenen ports `P` i `A` que comuniquen com a elements passius. A tots els distribuïdors, `properties.actuator` admet `pushbutton`, `lever` o `pedal`; `properties.returnMode` admet `spring` o `memory`. Els circuits v1 anteriors sense aquestes propietats continuen obrint-se amb els valors per defecte de cada vàlvula. `from` i `to` identifiquen extrems; no imposen sentit de circulació. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
+Aquest és el format **v1 del MVP publicat**. Els tipus acceptats són `source`, `receiver`, `maintenance`, `flowRegulator`, `valve2`, `valve3`, `valve4`, `valve5`, `single` i `double`. `receiver` i `maintenance` tenen ports `P` i `A` que comuniquen com a elements passius. `flowRegulator` té ports `P` i `A`; `properties.opening` admet `closed`, `low`, `medium` o `open` i, si falta en un circuit antic, s'obre per defecte. A tots els distribuïdors, `properties.actuator` admet `pushbutton`, `lever` o `pedal`; `properties.returnMode` admet `spring` o `memory`. Els circuits v1 anteriors sense aquestes propietats continuen obrint-se amb els valors per defecte de cada vàlvula. `from` i `to` identifiquen extrems; no imposen sentit de circulació. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
 
 Afegir medis explícits, rotació, recorreguts o nous contractes requereix una migració documentada i compatibilitat amb els circuits v1 descarregats. No canviar silenciosament els noms ni la forma dels camps mantenint el mateix número de versió.
 
@@ -268,7 +268,7 @@ Fer servir colors **i també** patrons, icones o text per diferenciar pressió, 
 
 Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després de cada acció. Han de servir de referència durant el desenvolupament del motor i de revisió visual de l'app.
 
-**Cobertura actual:** l'app inclou l'exemple font d'aire → acumulador → unitat de manteniment → 3/2 → cilindre simple, a més dels exemples de 2/2 NC, 3/2, 4/2 i 5/2. Es poden muntar els casos 1, 2 i 4; el cas 3 es configura canviant el retorn de la 5/2 a molla. Els casos 5–10 són criteris pendents de les fases següents; encara no es poden muntar tots amb el catàleg publicat.
+**Cobertura actual:** l'app inclou l'exemple font d'aire → acumulador → unitat de manteniment → 3/2 → cilindre simple, un exemple de regulador de cabal a obertura «poc», a més dels exemples de 2/2 NC, 3/2, 4/2 i 5/2. Es poden muntar els casos 1, 2, 4 i 7; el cas 3 es configura canviant el retorn de la 5/2 a molla. Els casos 5, 6 i 8–10 són criteris pendents de les fases següents; encara no es poden muntar tots amb el catàleg publicat.
 
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
@@ -295,13 +295,13 @@ Integració publicada: entrada THOSFLUID i llenç independent, biblioteca per fa
 
 ### Fase 1 — MVP pneumàtic
 
-Nucli publicat amb font d'aire, acumulador i unitat de manteniment passius, distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Accionament configurable amb polsador, palanca o pedal i retorn per molla o posició mantinguda; els circuits v1 antics conserven valors per defecte. Queden pendents l'avanç pas a pas i completar la verificació de tots els casos i del flux d'importació en navegadors d'aula.
+Nucli publicat amb font d'aire, acumulador i unitat de manteniment passius, regulador de cabal qualitatiu, distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Accionament configurable amb polsador, palanca o pedal i retorn per molla o posició mantinguda; els circuits v1 antics conserven valors per defecte. Queden pendents l'avanç pas a pas i completar la verificació de tots els casos i del flux d'importació en navegadors d'aula.
 
- Font d'aire, acumulador i unitat de manteniment, cilindres simple i doble, 2/2 NC, 3/2, 4/2 i 5/2, polsador, palanca, pedal, molla, posició mantinguda, motor discret, pressió/escapament visibles i controls **Edita/Simula/Atura/Reinicia/Pas a pas**. Cobrir els circuits 1–4 i 11.
+ Font d'aire, acumulador i unitat de manteniment, regulador de cabal qualitatiu, cilindres simple i doble, 2/2 NC, 3/2, 4/2 i 5/2, polsador, palanca, pedal, molla, posició mantinguda, motor discret i pressió/escapament visibles. Cobrir els circuits 1–4 i 7.
 
 ### Fase 2 — Lògica i seqüències
 
-Ja disponibles: vàlvules 2/2 NC i 4/2, amb exemples de circuit. Queden pendents els accionaments mecànics, pilotatge, finals de cursa, antiretorn, regulador qualitatiu, AND/OR i temporitzador. Cobrir els circuits 5–8 i 10.
+Ja disponibles: vàlvules 2/2 NC i 4/2, amb exemples de circuit, i regulador qualitatiu de cabal tancat/poc/mitjà/obert. Queden pendents els accionaments mecànics, pilotatge, finals de cursa, antiretorn, AND/OR i temporitzador. Cobrir els circuits 5, 6, 8 i 10; el circuit 7 ja es pot muntar.
 
 ### Fase 3 — Electropneumàtica
 
