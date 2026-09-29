@@ -485,7 +485,7 @@ function buildSimulation() {
   }
   let cylinderChanged = false;
   for (const c of circuit.components) if ((c.type === "single" || c.type === "double") && oldCylinders[c.id] !== runtime.cylinders[c.id]) cylinderChanged = true;
-  if (cylinderChanged && circuit.components.some(c => c.type === "limitValve3")) queueSimulationRefresh();
+  if (cylinderChanged && circuit.components.some(c => c.type === "limitValve3" || c.type === "electricLimit")) queueSimulationRefresh();
   for (const c of circuit.components.filter(item => item.type === "valve5Pilot")) {
     const x = pressure.has(key(c.id, "X")), y = pressure.has(key(c.id, "Y"));
     if (x !== y && runtime.valves[c.id] !== x) { runtime.valves[c.id] = x; queueSimulationRefresh(); }
