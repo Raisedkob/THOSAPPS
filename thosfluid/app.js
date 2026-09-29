@@ -171,6 +171,7 @@ function setRunning(next) {
   activeMomentaryId = null;
   pendingPort = null;
   selectedType = null;
+  panMode = false;
   resetRuntime();
   status(next ? "Simulació activa. Acciona una vàlvula i observa els conductes." : "Mode edició. Clica dos ports per connectar-los.");
   render();
@@ -292,6 +293,63 @@ function downloadCircuit() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   dirty = false;
   status("Circuit descarregat. Conserva el JSON per continuar més endavant.");
+}
+function downloadCanvasPng() {
+  const source = $("circuitCanvas");
+  const clone = source.cloneNode(true);
+  clone.querySelectorAll(".preview-wire").forEach(node => node.remove());
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  const viewBox = (source.getAttribute("viewBox") || "0 0 1200 700").split(/\s+/).map(Number);
+  const width = Math.max(1, Math.round(viewBox[2] || 1200));
+  const height = Math.max(1, Math.round(viewBox[3] || 700));
+  clone.setAttribute("width", width);
+  clone.setAttribute("height", height);
+  const styleProps = ["fill", "fill-opacity", "stroke", "stroke-width", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap", "stroke-linejoin", "stroke-opacity", "opacity", "font-family", "font-size", "font-weight", "text-anchor", "dominant-baseline", "visibility", "display", "vector-effect", "paint-order"];
+  const originals = [source, ...source.querySelectorAll("*")];
+  const copies = [clone, ...clone.querySelectorAll("*")];
+  originals.forEach((element, index) => {
+    const copy = copies[index];
+    if (!copy) return;
+    const computed = getComputedStyle(element);
+    styleProps.forEach(property => {
+      const value = computed.getPropertyValue(property);
+      if (value) copy.style.setProperty(property, value);
+    });
+  });
+  const svgBlob = new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl = URL.createObjectURL(svgBlob);
+  const image = new Image();
+  image.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas no disponible");
+      context.fillStyle = "#1a1a1a";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+      canvas.toBlob(blob => {
+        URL.revokeObjectURL(svgUrl);
+        if (!blob) return status("No s'ha pogut exportar el PNG.");
+        const pngUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const stem = circuit.metadata.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "circuit";
+        link.href = pngUrl;
+        link.download = `${stem}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+        status("Imatge PNG descarregada.");
+      }, "image/png");
+    } catch (error) {
+      URL.revokeObjectURL(svgUrl);
+      status("No s'ha pogut exportar el PNG.");
+    }
+  };
+  image.onerror = () => { URL.revokeObjectURL(svgUrl); status("No s'ha pogut exportar el PNG."); };
+  image.src = svgUrl;
 }
 async function openCircuit(file) {
   if (!file) return;
@@ -883,15 +941,22 @@ function render() {
   }
   $("circuitName").value = circuit.metadata.name;
   $("circuitName").disabled = running;
-  $("simulateBtn").textContent = running ? "■ Edita" : "▶ Simula";
+  $("simulateBtn").textContent = running ? "■" : "▶";
+  $("simulateBtn").setAttribute("aria-label", running ? "Atura la simulació i torna a editar" : "Inicia la simulació");
+  $("simulateBtn").title = running ? "Atura la simulació i torna a editar" : "Inicia la simulació";
   $("modeLabel").textContent = running ? "Mode simulació" : "Mode edició";
   $("canvasHint").textContent = running ? "Acciona els comandaments i observa l'aire i els senyals elèctrics." : pendingPort ? "Clica per afegir girs; amb teclat usa fletxes i Retorn. Acaba en un port compatible." : panMode ? "Arrossega el llenç per moure la vista." : "Clica dos ports per connectar-los; afegeix girs amb clics al llenç.";
   $("resetBtn").disabled = !running;
   $("deleteBtn").disabled = running || !selected;
   $("copyBtn").disabled = running || selected?.kind !== "component";
   $("pasteBtn").disabled = running || !clipboardComponent;
+  $("clickToolBtn").disabled = running;
+  $("panBtn").disabled = running;
+  $("textBtn").disabled = running;
   $("panBtn").setAttribute("aria-pressed", String(panMode));
   $("panBtn").classList.toggle("active-tool", panMode);
+  $("clickToolBtn").setAttribute("aria-pressed", String(!running && !panMode && !selectedType));
+  $("clickToolBtn").classList.toggle("active-tool", !running && !panMode && !selectedType);
   $("undoBtn").disabled = running || !history.length;
   $("redoBtn").disabled = running || !future.length;
   $("zoomLabel").textContent = `${Math.round(circuit.view.zoom * 100)}%`;
@@ -1061,7 +1126,7 @@ function setupLibrary() {
       drawSymbol(previewGroup, { id: `preview-${type}`, type, properties: type === "valve5" ? { returnMode: "memory" } : {} });
       preview.querySelectorAll("[role], [tabindex]").forEach(node => { node.removeAttribute("role"); node.removeAttribute("tabindex"); });
       const labels = document.createElement("span"); const itemTitle = document.createElement("strong"); itemTitle.textContent = def.label; const hint = document.createElement("small"); hint.textContent = def.hint; labels.append(itemTitle, hint); button.append(glyph, labels);
-      button.addEventListener("click", () => { if (running) return; selectedType = selectedType === type ? null : type; render(); status(selectedType ? `Fes clic al llenç per col·locar ${def.label}.` : "Eina cancel·lada."); });
+      button.addEventListener("click", () => { if (running) return; panMode = false; selectedType = selectedType === type ? null : type; render(); status(selectedType ? `Fes clic al llenç per col·locar ${def.label}.` : "Eina cancel·lada."); });
       button.addEventListener("dragstart", e => { if (running) { e.preventDefault(); return; } e.dataTransfer.setData("text/plain", type); });
       items.append(button);
     }
@@ -1124,6 +1189,7 @@ function setupControls() {
   // must remain available instead of being left with an inert canvas.
   $("deleteBtn").addEventListener("click", deleteSelected);
   $("panBtn").addEventListener("click", () => { panMode = !panMode; pendingPort = null; selectedType = null; render(); status(panMode ? "Eina PAN activada: arrossega el llenç." : "Eina PAN desactivada."); });
+  $("clickToolBtn").addEventListener("click", () => { if (running) return; panMode = false; selectedType = null; pendingPort = null; render(); status("Eina Clic activa: selecciona, mou o connecta components."); });
   $("textBtn").addEventListener("click", () => { panMode = false; selectedType = selectedType === "note" ? null : "note"; render(); status(selectedType ? "Clica al llenç per afegir una anotació; edita'n el text al panell." : "Eina de text cancel·lada."); });
   $("copyBtn").addEventListener("click", copySelected);
   $("pasteBtn").addEventListener("click", pasteSelected);
@@ -1149,6 +1215,7 @@ function setupControls() {
   $("openBtn").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", e => { openCircuit(e.target.files[0]); e.target.value = ""; });
   $("saveBtn").addEventListener("click", downloadCircuit);
+  $("exportPngBtn").addEventListener("click", downloadCanvasPng);
   $("circuitOptionsBtn").addEventListener("click", () => {
     const open = $("circuitOptions").hidden;
     $("circuitOptions").hidden = !open;
