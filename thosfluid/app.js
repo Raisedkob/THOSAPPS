@@ -941,7 +941,8 @@ function render() {
   }
   $("circuitName").value = circuit.metadata.name;
   $("circuitName").disabled = running;
-  $("simulateBtn").textContent = running ? "■" : "▶";
+  $("simulateIcon").innerHTML = running ? '<path d="M6 6h12v12H6z" />' : '<path d="m7 4 14 8-14 8z" />';
+  $("simulateLabel").textContent = running ? "Edita" : "Simula";
   $("simulateBtn").setAttribute("aria-label", running ? "Atura la simulació i torna a editar" : "Inicia la simulació");
   $("simulateBtn").title = running ? "Atura la simulació i torna a editar" : "Inicia la simulació";
   $("modeLabel").textContent = running ? "Mode simulació" : "Mode edició";
