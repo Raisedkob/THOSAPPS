@@ -20,7 +20,7 @@ El motor resol **estats lògics i funcionals**, sense calcular magnituds físiqu
 - Construir i modificar esquemes amb símbols funcionals, ports i connexions.
 - Simular accionaments manuals, mecànics, pneumàtics i elèctrics, incloses seqüències automàtiques senzilles.
 - Fer visible l'estat de cada connexió i component, amb explicacions breus dels canvis i dels errors.
-- Permetre que cada alumne descarregui el seu circuit en un JSON versionat i l'obri de nou des del dispositiu per continuar treballant. Oferir, si ho activa, una única còpia local de recuperació de l'últim circuit.
+- Permetre que cada alumne descarregui el seu circuit en un JSON versionat i l'obri de nou des del dispositiu per continuar treballant. Desar automàticament una única còpia local de recuperació de l'últim circuit després de cada canvi.
 - Separar el motor de la interfície i preparar-lo per a nous dominis de fluids en el futur.
 
 ### Fora de l'abast
@@ -61,7 +61,7 @@ No afegir una targeta «Pròximament» com a substitut de l'app funcional. No re
 - Mantenir al repositori tots els fitxers necessaris per reproduir l'app i tots els circuits de referència. Cap còpia local ha de ser l'única versió d'una entrega acabada.
 - Fer servir l'historial de commits de GitHub per conservar les versions. Per a canvis grans, treballar en una branca i obrir una sol·licitud de canvis; crear etiquetes de versió quan hi hagi una entrega estable.
 - Tecno-Apps es publica des del mateix projecte de GitHub. Després de cada publicació, comprovar que la versió visible a `tecno-apps.cat` correspon al contingut versionat.
-- Els circuits personals que l'alumnat creï amb l'editor són dades d'usuari, diferents de les còpies del projecte. Cada alumne se'n descarrega el fitxer JSON i el conserva al seu dispositiu per continuar més endavant. Opcionalment, el navegador pot mantenir una sola còpia local de recuperació de l'últim circuit. L'app no els desa en cap servidor ni els puja a GitHub. Només els circuits d'exemple preparats per a l'app formen part del projecte versionat.
+- Els circuits personals que l'alumnat creï amb l'editor són dades d'usuari, diferents de les còpies del projecte. Cada alumne se'n descarrega el fitxer JSON i el conserva al seu dispositiu per continuar més endavant. El navegador desa automàticament una sola còpia local de recuperació de l'últim circuit després de cada canvi. L'app no els desa en cap servidor ni els puja a GitHub. Només els circuits d'exemple preparats per a l'app formen part del projecte versionat.
 
 ## 3. Ús educatiu
 
@@ -119,7 +119,7 @@ L'electrovàlvula té una part elèctrica que determina l'accionament i una part
 - Desfés/refés per a totes les operacions d'edició.
 - Panell de propietats: variant del component, configuració de repòs, sentit d'un regulador, referències de bobina/relé i nom opcional.
 - **Desa** descarrega un fitxer JSON al dispositiu de l'alumne. **Obre** selecciona un fitxer JSON del dispositiu i el carrega directament al navegador; no l'envia a cap servidor. Si és viable amb la tecnologia escollida, permetre també exportar l'esquema com a SVG o PNG.
-- **Còpia de recuperació:** opció desactivada per defecte que l'alumne pot activar o desactivar. Quan està activada, l'app actualitza **una única còpia de l'últim circuit** a l'emmagatzematge local d'aquell navegador després de cada operació d'edició confirmada. La còpia nova substitueix l'anterior; no es crea un historial. En reobrir la pàgina després d'un tancament accidental, oferir **Recupera l'últim circuit** abans de substituir el circuit actual. Incloure **Esborra la còpia de recuperació**; desactivar l'opció també esborra la còpia existent.
+- **Còpia automàtica de recuperació:** l'app actualitza **una única còpia de l'últim circuit** a l'emmagatzematge local d'aquell navegador després de cada operació d'edició confirmada. La còpia nova substitueix l'anterior; no es crea un historial. En reobrir la pàgina després d'un tancament accidental, oferir **Recupera l'últim circuit** abans de substituir el circuit actual. Incloure **Esborra la còpia de recuperació**.
 - Avisar abans de perdre canvis no desats.
 
 **Flux per reprendre la feina:** l'alumne munta el circuit → prem **Desa** → conserva el JSON descarregat → en una altra sessió obre THOSFLUID → prem **Obre** i selecciona aquell JSON → continua editant-lo. En tornar a desar, es descarrega una nova còpia actualitzada. La còpia de recuperació és una ajuda per al tancament accidental en el mateix navegador i dispositiu; es pot perdre si s'esborren les dades del navegador i no substitueix el JSON descarregat. Aquest flux no depèn de comptes, servidors ni sincronització amb GitHub.
@@ -133,7 +133,7 @@ L'electrovàlvula té una part elèctrica que determina l'accionament i una part
 - Mostrar un avís comprensible si el circuit no convergeix o té connexions incompatibles.
 - Evitar edicions involuntàries mentre s'executa; el canvi de mode no ha d'alterar silenciosament el fitxer desat.
 
-**Textos visibles inicials:** `Edita`, `Simula`, `Atura`, `Reinicia`, `Pas a pas`, `Desa`, `Obre`, `Exporta`, `Desfés`, `Refés`, `Activa la còpia de recuperació`, `Recupera l'últim circuit`, `Esborra la còpia de recuperació`, `Sense pressió`, `Amb pressió`, `Escapament`, `Circuit incomplet`. Els identificadors interns del codi poden ser en anglès, però tota la interfície, els errors, la biblioteca, els exemples i l'ajuda han de ser en català. Centralitzar les cadenes per facilitar una traducció futura, sense afegir un selector d'idioma al MVP.
+**Textos visibles inicials:** `Edita`, `Simula`, `Atura`, `Reinicia`, `Pas a pas`, `Desa`, `Obre`, `Exporta`, `Desfés`, `Refés`, `Còpia automàtica de recuperació`, `Recupera l'últim circuit`, `Esborra la còpia de recuperació`, `Sense pressió`, `Amb pressió`, `Escapament`, `Circuit incomplet`. Els identificadors interns del codi poden ser en anglès, però tota la interfície, els errors, la biblioteca, els exemples i l'ajuda han de ser en català. Centralitzar les cadenes per facilitar una traducció futura, sense afegir un selector d'idioma al MVP.
 
 ## 6. Model de dades i persistència
 
@@ -199,7 +199,7 @@ Afegir medis explícits, rotació, recorreguts o nous contractes requereix una m
 
 Els valors de codi poden ser `none/present`, `none/exhaust`, `retracted/moving_forward/extended/moving_backward` i `deenergized/energized`. Són categories discretes. Les etiquetes que veu l'alumne han de ser en català i no han de suggerir mesures físiques.
 
-El JSON necessita un `version` explícit, validador d'importació i migracions quan s'ampliï l'esquema. No serialitzar funcions, referències al DOM ni objectes circulars. El circuit obert viu en la memòria de la sessió del navegador; **Desa** genera una descàrrega local i **Obre** llegeix un fitxer local. La recuperació del MVP fa servir un únic registre `localStorage`, `thosfluid:last-circuit:v1`, i una preferència `thosfluid:backup-enabled`. Només s'actualitza si l'usuari l'ha activada; no desa l'estat temporal de la simulació. En obrir la pàgina, oferir la restauració, sense fer-la silenciosament. Cap circuit de l'alumnat no es desa en un servidor ni es transmet al repositori.
+El JSON necessita un `version` explícit, validador d'importació i migracions quan s'ampliï l'esquema. No serialitzar funcions, referències al DOM ni objectes circulars. El circuit obert viu en la memòria de la sessió del navegador; **Desa** genera una descàrrega local i **Obre** llegeix un fitxer local. La recuperació fa servir un únic registre `localStorage`, `thosfluid:last-circuit:v1`, que s'actualitza automàticament després de cada canvi; no desa l'estat temporal de la simulació. En obrir la pàgina, oferir la restauració, sense fer-la silenciosament. Cap circuit de l'alumnat no es desa en un servidor ni es transmet al repositori.
 
 ## 7. Arquitectura del motor
 
@@ -295,7 +295,7 @@ Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després 
 | 9 | Polsador elèctric → relé/solenoide → electrovàlvula → cilindre | La continuïtat elèctrica acciona la vàlvula i després la xarxa pneumàtica; en treure el senyal s'aplica el retorn o la memòria definits. Incloure la biestable de dues bobines: Y1/Y2 commuten sentits oposats i la vàlvula conserva la posició sense senyal. |
 | 10 | Inici manual, temporitzador i fase automàtica | L'ordre inicial desencadena una única transició després dels ticks previstos; aturar/reiniciar restaura l'estat inicial. |
 
-**Criteri comú:** resultat determinista, connexions i símbols visualment coherents amb l'estat intern, avís explícit davant d'un conflicte o bucle, cap bloqueig de la pàgina, i conservació exacta de components, propietats, connexions i vista en descarregar el JSON i tornar-lo a obrir en una sessió nova. Amb la còpia de recuperació activada, tancar i reobrir la pàgina ofereix l'últim circuit; desactivada, no crea cap còpia nova; esborrar-la la fa desaparèixer. La prova del flux ha de confirmar que no hi ha cap petició de xarxa que enviï el circuit a un servidor. Les comprovacions del motor no substitueixen la revisió visual ni la verificació de la ruta pública quan es publiqui.
+**Criteri comú:** resultat determinista, connexions i símbols visualment coherents amb l'estat intern, avís explícit davant d'un conflicte o bucle, cap bloqueig de la pàgina, i conservació exacta de components, propietats, connexions i vista en descarregar el JSON i tornar-lo a obrir en una sessió nova. La còpia automàtica ofereix l'últim circuit en reobrir la pàgina; esborrar-la la fa desaparèixer fins que hi hagi un canvi nou. La prova del flux ha de confirmar que no hi ha cap petició de xarxa que enviï el circuit a un servidor. Les comprovacions del motor no substitueixen la revisió visual ni la verificació de la ruta pública quan es publiqui.
 
 ## 11. Pla de desenvolupament
 
@@ -391,3 +391,8 @@ S'incorporen quatre elements comuns a la biblioteca, mantenint la simulació qua
 - **Vàlvula seqüencial de pressió:** ports P, A, R i X. El senyal a X inicia un llindar qualitatiu baix, mitjà o alt; en completar-se, s'obre P–A. La selecció és una abstracció de passos/retard per ensenyar seqüències, no una lectura o càlcul de pressió real.
 
 En mode pas a pas, els retards i el llindar avancen amb els passos lògics. En mode continu, s'animen amb retards qualitatius. El circuit elèctric conserva el mateix model de continuïtat booleana de la versió actual. Els quatre elements tenen circuits d'exemple a la biblioteca.
+
+
+## Còpia automàtica de recuperació
+
+S'ha retirat l'activació manual: cada operació d'edició desa automàticament l'últim circuit a `localStorage` del mateix navegador. Es conserva només una còpia i es pot esborrar des del menú Circuit. No s'envia cap dada a un servidor i la recuperació continua sent manual després de reobrir la pàgina.
