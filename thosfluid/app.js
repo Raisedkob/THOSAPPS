@@ -256,6 +256,17 @@ function buildSimulation() {
   };
   const pressure = flood(pressureSeeds);
   const exhaust = flood(exhaustSeeds);
+  const distancesFrom = seeds => {
+    const distances = new Map(seeds.map(node => [node, 0]));
+    const queue = [...seeds];
+    for (let i = 0; i < queue.length; i++) {
+      const node = queue[i];
+      for (const next of graph.get(node) || []) if (!distances.has(next)) { distances.set(next, distances.get(node) + 1); queue.push(next); }
+    }
+    return distances;
+  };
+  const pressureDistances = distancesFrom(pressureSeeds);
+  const exhaustDistances = distancesFrom(exhaustSeeds);
   const speedFlood = seeds => {
     const levels = new Map(seeds.map(node => [node, 3]));
     const queue = [...seeds];
@@ -270,6 +281,20 @@ function buildSimulation() {
   };
   const pressureSpeed = speedFlood(pressureSeeds), exhaustSpeed = speedFlood(exhaustSeeds);
   const conflicts = new Set([...pressure].filter(node => exhaust.has(node)));
+  const flowDirections = {};
+  for (const w of circuit.connections) {
+    const from = key(w.from.componentId, w.from.portId), to = key(w.to.componentId, w.to.portId);
+    if (conflicts.has(from) || conflicts.has(to)) continue;
+    if (pressure.has(from) && pressure.has(to)) {
+      const a = pressureDistances.get(from), b = pressureDistances.get(to);
+      if (a < b) flowDirections[w.id] = "forward";
+      else if (b < a) flowDirections[w.id] = "reverse";
+    } else if (exhaust.has(from) && exhaust.has(to)) {
+      const a = exhaustDistances.get(from), b = exhaustDistances.get(to);
+      if (a > b) flowDirections[w.id] = "forward";
+      else if (b > a) flowDirections[w.id] = "reverse";
+    }
+  }
   const cylinderSpeeds = {};
   for (const c of circuit.components) {
     if (c.type === "single") {
@@ -283,7 +308,7 @@ function buildSimulation() {
       else if (pressure.has(b) && exhaust.has(a) && !conflicts.has(a) && !conflicts.has(b)) { runtime.cylinders[c.id] = "retracted"; cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(b) || 3, exhaustSpeed.get(a) || 3); }
     }
   }
-  return { pressure, exhaust, conflicts, cylinderSpeeds };
+  return { pressure, exhaust, conflicts, cylinderSpeeds, flowDirections };
 }
 function portState(componentId, portId) {
   if (!running || !simulation) return "idle";
@@ -311,7 +336,10 @@ function renderWire(world, w) {
   const start = pointOnComponent(a, w.from.portId), end = pointOnComponent(b, w.to.portId);
   const mid = (start.x + end.x) / 2;
   const state = portState(a.id, w.from.portId);
-  const path = svg("path", { d: `M ${start.x} ${start.y} H ${mid} V ${end.y} H ${end.x}`, class: `wire ${state}${selected?.kind === "wire" && selected.id === w.id ? " selected" : ""}`, tabindex: running ? "-1" : "0", role: "button", "aria-label": `Conducte ${w.from.portId} a ${w.to.portId}: ${state === "pressure" ? "amb pressió" : state === "exhaust" ? "escapament" : "sense pressió"}` }, world);
+  const direction = simulation?.flowDirections?.[w.id];
+  const pathData = `M ${start.x} ${start.y} H ${mid} V ${end.y} H ${end.x}`;
+  const flowClass = direction === "reverse" ? " flow-reverse" : direction === "forward" ? " flow-forward" : "";
+  const path = svg("path", { d: pathData, class: `wire ${state}${flowClass}${selected?.kind === "wire" && selected.id === w.id ? " selected" : ""}`, tabindex: running ? "-1" : "0", role: "button", "aria-label": `Conducte ${w.from.portId} a ${w.to.portId}: ${state === "pressure" ? "amb pressió" : state === "exhaust" ? "escapament" : "sense pressió"}${direction ? direction === "forward" ? "; flux cap al segon port" : "; flux cap al primer port" : ""}` }, world);
   path.addEventListener("click", e => { e.stopPropagation(); if (!running) { selected = { kind: "wire", id: w.id }; render(); } });
   path.addEventListener("keydown", e => { if (e.key === "Enter" && !running) { selected = { kind: "wire", id: w.id }; render(); } });
 }
@@ -528,7 +556,7 @@ function render() {
   $("circuitName").disabled = running;
   $("simulateBtn").textContent = running ? "■ Edita" : "▶ Simula";
   $("modeLabel").textContent = running ? "Mode simulació" : "Mode edició";
-  $("canvasHint").textContent = running ? "Acciona una vàlvula i observa els conductes." : "Clica dos ports per connectar-los.";
+  $("canvasHint").textContent = running ? "Acciona una vàlvula i observa com es desplaça l'aire pels conductes." : "Clica dos ports per connectar-los.";
   $("resetBtn").disabled = !running;
   $("deleteBtn").disabled = running || !selected;
   $("undoBtn").disabled = running || !history.length;
