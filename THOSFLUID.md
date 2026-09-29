@@ -5,7 +5,7 @@
 **Web de destinació:** [tecno-apps.cat](https://tecno-apps.cat/)  
 **Idioma:** català a tota la interfície i la documentació funcional  
 **Públic:** ESO, batxillerat i formació professional  
-**Estat:** biblioteca pneumàtica ampliada amb elements de regulació, lògica, pilotatge, temporització i distribuïdor 5/3; l'electropneumàtica continua pendent
+**Estat:** ampliació en curs; les còpies de desenvolupament inclouen recorreguts de conductes, unió en T, eines d'edició i una primera família electroneumàtica. Requereix comprovació visual i didàctica abans de considerar-la acceptada.
 
 **Font única del projecte:** el repositori `dep-tecno/THOSAPPS` a GitHub. L'especificació `THOSFLUID.md`, el codi, els símbols propis, els circuits d'exemple i les versions lliurades han de quedar versionats en aquest repositori.
 
@@ -37,9 +37,9 @@ La portada ha d'incloure una **targeta activa THOSFLUID** amb el mateix format 1
 
 ### MVP incorporat al repositori
 
-La versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. La biblioteca inclou font d'aire, acumulador, unitat de manteniment, reguladors qualitatius, antiretorn, distribuïdors 2/2–5/3, cilindres, final de cursa mecànic 3/2, vàlvula 5/2 de doble pilotatge, vàlvules lògiques AND/OR i temporitzador pneumàtic. Durant la simulació, els traços de pressió i escapament es desplacen dins dels conductes per mostrar el sentit del flux; el sentit s'actualitza amb cada commutació de vàlvula i no es representa amb fletxes. Els reguladors només alteren el pas lògic i la categoria visual de velocitat. L'acumulador i la unitat de manteniment són elements passius. L'electropneumàtica continua pendent. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
+La versió publicada del projecte inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. L'ampliació de treball afegeix recorreguts manuals de connexions, unió en T, anotacions, còpia/enganxat de components i una primera xarxa elèctrica qualitativa amb polsadors, interruptor, relé, final de cursa elèctric i electrovàlvula 5/2 monoestable. La pàgina continua sent estàtica i els circuits de l'alumnat continuen guardant-se al dispositiu. Cal distingir el codi preparat de la validació visual i funcional a navegador.
 
-**Límits de la versió actual:** divuit tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; els retards són categories qualitatives, no temps ni valors físics del component real. L'acumulador i la unitat de manteniment són passius al model. L'electropneumàtica i les connexions elèctriques encara no estan implementades.
+**Límits actuals:** cada port admet una connexió; per repartir una xarxa cal inserir una unió en T amb tres ports. Els creuaments visuals dels recorreguts no creen connexió. No hi ha rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; els retards i els senyals elèctrics són qualitatius. L'electrovàlvula inclosa és monoestable; encara cal ampliar els circuits de referència i revisar les variants elèctriques amb el professorat.
 
 El repositori actual publica pàgines HTML a l'arrel. `index.html` conté la navegació i les targetes de les eines; `thosdruino.html` és una aplicació en una sola pàgina; `thosvincle.html` és una pàgina d'entrada que integra `thosvincle-app.html` en un `iframe`. `sitemap.xml` enumera URL públiques. **Abans de programar, Codex ha de tornar a inspeccionar el repositori**, perquè la seva estructura pot haver canviat.
 
@@ -86,10 +86,13 @@ Els nivells orienten filtres i exemples, però no han de bloquejar components. E
 | Regulació | Regulador de cabal qualitatiu bidireccional i regulador unidireccional amb antiretorn intern. La posició regulada limita la categoria de velocitat visual; el sentit contrari passa lliurement. |
 | Pas i lògica | Vàlvula antiretorn configurable P→A o A→P; vàlvules AND i OR amb dues entrades X/Y i una sortida A. |
 | Seqüència | Temporitzador pneumàtic 3/2 amb entrada de senyal X i retard curt/mitjà/llarg. Distribuïdor manual 5/3 amb centre tancat. |
+| Connexions | Unió en T explícita de tres ports. Cada tram es dibuixa amb clics intermedis; un simple creuament de recorreguts no connecta xarxes. |
 
 Els símbols s'han de dibuixar de manera coherent amb la simbologia pneumàtica convencional de la família ISO 1219: una casella per posició del distribuïdor, fletxes per als passos oberts, topalls per als ports tancats, accionament i molla als costats, i èmbol, tija i molla als cilindres que correspongui. La [làmina de referència facilitada](https://i0.wp.com/www.joucomatic.com.es/wp-content/uploads/2018/05/simbologia-neumatica2.jpg) orienta la forma dels símbols. Cal revisar cada variant de la biblioteca abans d'afirmar una conformitat formal amb la norma. El funcionament prové de la definició de ports i posicions, mai de la geometria del dibuix.
 
 ### Electricitat i electropneumàtica V1
+
+La primera implementació cobreix font lògica, polsador NO/NC, interruptor, bobina de relé i contactes NO/NC associats per nom, final de cursa elèctric, i una electrovàlvula 5/2 monoestable. El senyal es resol com a continuïtat, sense calcular volts, corrents, resistències o potència. La xarxa elèctrica i la pneumàtica es dibuixen i s'avaluen separadament.
 
 - Font i retorn de control elèctric, representats com a estat de continuïtat binari.
 - Polsadors normalment oberts i normalment tancats, i interruptors mantinguts.
@@ -98,6 +101,8 @@ Els símbols s'han de dibuixar de manera coherent amb la simbologia pneumàtica 
 - Solenoides i electrovàlvules monoestables o biestables, segons el model concret.
 - Cables elèctrics visualment diferents dels conductes pneumàtics.
 
+Queden pendents les electrovàlvules biestables, sensors addicionals, circuits de relé amb variants d'automanteniment i la revisió docent dels símbols elèctrics.
+
 L'electrovàlvula té una part elèctrica que determina l'accionament i una part pneumàtica que comunica els ports de treball. Els dominis no s'han de barrejar en una mateixa connexió.
 
 ## 5. Editor i modes
@@ -105,9 +110,12 @@ L'electrovàlvula té una part elèctrica que determina l'accionament i una part
 ### Mode **Edita**
 
 - Llenç amb quadrícula discreta, desplaçament, zoom i ajust al contingut.
+- Eina PAN explícita per arrossegar la vista des de qualsevol punt del llenç.
+- Eina Text per inserir anotacions i editar-les al panell contextual.
+- Copiar/enganxar un component amb les seves propietats; les connexions es tornen a dibuixar després d'enganxar.
 - Biblioteca amb cerca i categories; arrossegar o inserir un component amb teclat.
 - Seleccionar, moure, duplicar, girar quan el símbol ho admeti i esborrar.
-- Crear connexions des d'un port fins a un altre; mostrar nom, funció i medi de cada port. Permetre desfer una connexió i editar-ne el recorregut visual.
+- Crear connexions des d'un port fins a un altre amb punts de gir marcats amb clics al llenç; la línia provisional segueix el ratolí. La connexió conserva el recorregut en el JSON. Un port no pot barrejar conductes pneumàtics amb cables elèctrics.
 - Desfés/refés per a totes les operacions d'edició.
 - Panell de propietats: variant del component, configuració de repòs, sentit d'un regulador, referències de bobina/relé i nom opcional.
 - **Desa** descarrega un fitxer JSON al dispositiu de l'alumne. **Obre** selecciona un fitxer JSON del dispositiu i el carrega directament al navegador; no l'envia a cap servidor. Si és viable amb la tecnologia escollida, permetre també exportar l'esquema com a SVG o PNG.
@@ -134,7 +142,7 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
 ```json
 {
   "format": "thosfluid-circuit",
-  "version": 1,
+  "version": 2,
   "metadata": { "name": "Exemple: cilindre simple i vàlvula 3/2" },
   "components": [
     {
@@ -163,12 +171,14 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
     {
       "id": "n1",
       "from": { "componentId": "c1", "portId": "P" },
-      "to": { "componentId": "c2", "portId": "P" }
+      "to": { "componentId": "c2", "portId": "P" },
+      "route": []
     },
     {
       "id": "n2",
       "from": { "componentId": "c2", "portId": "A" },
-      "to": { "componentId": "c3", "portId": "A" }
+      "to": { "componentId": "c3", "portId": "A" },
+      "route": []
     }
   ],
   "view": { "zoom": 1, "pan": { "x": 0, "y": 0 } }
@@ -270,7 +280,7 @@ Fer servir colors **i també** patrons, icones o text per diferenciar pressió, 
 
 Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després de cada acció. Han de servir de referència durant el desenvolupament del motor i de revisió visual de l'app.
 
-**Cobertura actual:** l'app inclou exemples per a l'alimentació, regulació qualitativa i distribuïdors 2/2, 3/2, 4/2 i 5/2. El catàleg ja permet muntar els casos 1–8 i 10, incloses seqüències amb final mecànic, pilotatge i lògica pneumàtica; el cas 9 d'electropneumàtica continua pendent. Aquests són criteris de referència, no circuits d'exemple preinstal·lats ni una verificació completa de totes les combinacions.
+**Cobertura d'exemples preparada:** alimentació, regulació, derivació en T, 2/2, 3/2, 4/2, 5/2, final de cursa, lògica AND i temporitzador, a més d'electroneumàtica. Són exemples editables per orientar l'alumnat; encara cal revisar-ne cada resultat al navegador i amb criteri docent.
 
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
@@ -307,7 +317,7 @@ Disponibles: antiretorn, regulador unidireccional, final de cursa mecànic 3/2, 
 
 ### Fase 3 — Electropneumàtica
 
-Xarxa elèctrica, polsadors/interruptors, contactes, relés, sensors, bobines, solenoides i electrovàlvules. Cobrir el circuit 9 i variants amb dos cilindres.
+Primera base implementada a la còpia de treball: font, polsadors NO/NC, interruptor, relé i contactes NO/NC, final de cursa i electrovàlvula 5/2 monoestable. Pendents: circuits compostos, biestabilitat i acceptació docent de símbols i exemples.
 
 ### Fase 4 — Acabat
 
@@ -362,4 +372,13 @@ Estructura consultada el **28 de setembre de 2026**; document actualitzat el **2
 - Revisió al navegador local: muntatge d'una connexió, exemples 3/2 i 5/2, retorn del polsador, descàrrega iniciada i recuperació de l'últim circuit després de recarregar.
 - Revisió del web públic: targeta amb imatge a la portada, accés a l'app, commutació de la 5/2 i estat estès del cilindre.
 - Pendent: completar l'obertura d'un JSON descarregat mitjançant el selector de fitxers, la matriu d'accessibilitat i dispositius, i els circuits de fases futures. Aquestes comprovacions parcials no equivalen a l'acceptació completa de V1.
+
+## Estat de l'ampliació del 29 de setembre de 2026
+
+- Afegit a la còpia de treball: eina PAN, anotacions, copiar/enganxar components i connexions amb recorreguts de clics desats al JSON v2. El validador continua acceptant circuits JSON v1 i els converteix al model nou amb recorreguts buits.
+- Afegides unions en T i exemples editables de derivació, final de cursa, lògica, temporització i electroneumàtica.
+- Afegida una primera xarxa elèctrica binària amb polsadors, interruptors, relés, contactes, final elèctric i una electrovàlvula 5/2 monoestable. No hi ha càlculs elèctrics ni pneumàtics.
+- La connexió de ports incompatibles i els encreuaments sense unió explícita es tracten separadament.
+- Estat de revisió: cal fer una passada de navegador per verificar la interacció i l'aspecte, i completar la revisió docent dels exemples i símbols. No s'ha d'interpretar l'edició de codi com a acceptació final.
+
 
