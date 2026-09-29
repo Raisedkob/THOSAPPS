@@ -82,7 +82,7 @@ Els nivells orienten filtres i exemples, però no han de bloquejar components. E
 | Alimentació | Font d'aire i unitat de manteniment; originen una pressió lògica disponible. |
 | Actuadors | Cilindre de simple efecte amb retorn per molla i de doble efecte, amb posicions extremes i moviment visible. |
 | Distribució | Vàlvules 2/2, 3/2, 4/2 i 5/2; posició de repòs, connexions internes per posició i variants normalment obertes/tancades quan pertoqui. 5/3 opcional després del MVP. |
-| Accionaments | Polsador, palanca, pedal, rodolí/èmbol mecànic, molla, pilotatge pneumàtic; caràcter momentani o mantingut segons el model. |
+| Accionaments | Manuals: polsador, palanca i pedal, amb retorn per molla o posició mantinguda. Després: rodolí/èmbol mecànic i pilotatge pneumàtic. |
 | Regulació | Regulador de cabal qualitatiu i variant amb antiretorn, amb sentit regulat explícit. |
 | Pas i lògica | Antiretorn, vàlvules AND i OR pneumàtiques. |
 | Seqüència | Temporitzador pneumàtic de retard discret; finals de cursa vinculats als extrems dels cilindres. |
@@ -149,7 +149,7 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
       "type": "valve3",
       "x": 395,
       "y": 255,
-      "properties": {}
+      "properties": { "actuator": "pushbutton", "returnMode": "spring" }
     },
     {
       "id": "c3",
@@ -175,7 +175,7 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
 }
 ```
 
-Aquest és el format **v1 del MVP publicat**. Els tipus acceptats són `source`, `valve3`, `valve5`, `single` i `double`. A `valve5`, `properties.returnMode` admet `memory` o `spring`. `from` i `to` identifiquen extrems; no imposen sentit de circulació. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
+Aquest és el format **v1 del MVP publicat**. Els tipus acceptats són `source`, `valve2`, `valve3`, `valve4`, `valve5`, `single` i `double`. A tots els distribuïdors, `properties.actuator` admet `pushbutton`, `lever` o `pedal`; `properties.returnMode` admet `spring` o `memory`. Els circuits v1 anteriors sense aquestes propietats continuen obrint-se amb els valors per defecte de cada vàlvula. `from` i `to` identifiquen extrems; no imposen sentit de circulació. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
 
 Afegir medis explícits, rotació, recorreguts o nous contractes requereix una migració documentada i compatibilitat amb els circuits v1 descarregats. No canviar silenciosament els noms ni la forma dels camps mantenint el mateix número de versió.
 
@@ -272,7 +272,7 @@ Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després 
 
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
-| 1 | Font → 3/2 NC amb polsador i molla → cilindre simple; variant 2/2 NC | Amb 3/2: prémer avança i deixar anar connecta `A–R`, descarrega i retorna. Amb 2/2: prémer avança i deixar anar tanca el pas; la cambra conserva qualitativament l'estat estès. |
+| 1 | Font → 3/2 NC amb polsador i molla → cilindre simple; variant 2/2 NC | Amb 3/2: prémer avança i deixar anar connecta `A–R`, descarrega i retorna. Amb 2/2: prémer avança i deixar anar tanca el pas; la cambra conserva qualitativament l'estat estès. Polsador, palanca i pedal canvien la icona i l'accionament; el retorn per molla actua mentre es manté l'ordre, i la posició mantinguda conserva l'estat fins a la següent commutació. |
 | 2 | Font → 5/2 biestable → cilindre de doble efecte | Ordre A: avançament; ordre B: retrocés; en cada estat es mostren les dues comunicacions internes correctes. |
 | 3 | 5/2 monoestable i cilindre de doble efecte | L'accionament canvia la posició; en deixar-lo anar la molla retorna la vàlvula i el cilindre segons els ports connectats. |
 | 4 | 4/2 i cilindre de doble efecte | Les dues posicions inverteixen alimentació i descàrrega de les cambres. |
@@ -295,9 +295,9 @@ Integració publicada: entrada THOSFLUID i llenç independent, biblioteca per fa
 
 ### Fase 1 — MVP pneumàtic
 
-Nucli publicat amb distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Queden pendents l'avanç pas a pas i completar la verificació de tots els casos i del flux d'importació en navegadors d'aula.
+Nucli publicat amb distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Accionament configurable amb polsador, palanca o pedal i retorn per molla o posició mantinguda; els circuits v1 antics conserven valors per defecte. Queden pendents l'avanç pas a pas i completar la verificació de tots els casos i del flux d'importació en navegadors d'aula.
 
-Font, cilindres simple i doble, 2/2 NC, 3/2, 4/2 i 5/2, polsador, molla, motor discret, pressió/escapament visibles i controls **Edita/Simula/Atura/Reinicia/Pas a pas**. Cobrir els circuits 1–4 i 11.
+ Font, cilindres simple i doble, 2/2 NC, 3/2, 4/2 i 5/2, polsador, palanca, pedal, molla, posició mantinguda, motor discret, pressió/escapament visibles i controls **Edita/Simula/Atura/Reinicia/Pas a pas**. Cobrir els circuits 1–4 i 11.
 
 ### Fase 2 — Lògica i seqüències
 
@@ -360,3 +360,4 @@ Estructura consultada el **28 de setembre de 2026**; document actualitzat el **2
 - Revisió al navegador local: muntatge d'una connexió, exemples 3/2 i 5/2, retorn del polsador, descàrrega iniciada i recuperació de l'últim circuit després de recarregar.
 - Revisió del web públic: targeta amb imatge a la portada, accés a l'app, commutació de la 5/2 i estat estès del cilindre.
 - Pendent: completar l'obertura d'un JSON descarregat mitjançant el selector de fitxers, la matriu d'accessibilitat i dispositius, i els circuits de fases futures. Aquestes comprovacions parcials no equivalen a l'acceptació completa de V1.
+
