@@ -10,12 +10,23 @@ const MAX_COMPONENTS = 80;
 const MAX_CONNECTIONS = 160;
 
 const TYPES = {
-  source: { label: "Font d'aire", short: "FONT", hint: "Pressió lògica", glyph: "◉", w: 105, h: 100, ports: { P: [105, 50] } },
-  valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Polsador · molla", glyph: "⇄", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
-  valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Dues posicions", glyph: "⇅", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
-  single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", w: 215, h: 140, ports: { A: [40, 140] } },
-  double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } }
+  source: { label: "Font d'aire", short: "FONT", hint: "Pressió lògica", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
+  valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Polsador · molla", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
+  valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Dues posicions", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
+  single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", family: "actuators", w: 215, h: 140, ports: { A: [40, 140] } },
+  double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", family: "actuators", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } }
 };
+const FAMILY_ORDER = ["supply", "valves", "actuators", "control", "regulation", "logic", "electrical"];
+const FAMILIES = {
+  supply: "Alimentació i preparació de l'aire",
+  valves: "Vàlvules distribuïdores",
+  actuators: "Actuadors",
+  control: "Accionaments i sensors",
+  regulation: "Regulació i pas",
+  logic: "Lògica i temporització",
+  electrical: "Electroneumàtica"
+};
+const collapsedFamilies = new Set();
 
 const $ = id => document.getElementById(id);
 const svg = (tag, attrs = {}, parent) => {
@@ -433,17 +444,41 @@ function loadExample(kind) {
   status(kind === "simple" ? "Exemple 3/2 carregat. Prem Simula i mantén premut el polsador." : "Exemple 5/2 carregat. Prem Simula i commuta la vàlvula.");
 }
 function setupLibrary() {
+  const host = $("libraryItems"); host.replaceChildren();
+  const typesByFamily = new Map();
   for (const [type, def] of Object.entries(TYPES)) {
-    const button = document.createElement("button"); button.className = "library-item"; button.type = "button"; button.draggable = true; button.dataset.type = type;
-    const glyph = document.createElement("span"); glyph.className = "glyph"; glyph.setAttribute("aria-hidden", "true");
-    const preview = svg("svg", { viewBox: `0 0 ${def.w} ${def.h}`, width: 48, height: 34 }, glyph);
-    const previewGroup = svg("g", { class: "component" }, preview);
-    drawSymbol(previewGroup, { id: `preview-${type}`, type, properties: type === "valve5" ? { returnMode: "memory" } : {} });
-    preview.querySelectorAll("[role], [tabindex]").forEach(node => { node.removeAttribute("role"); node.removeAttribute("tabindex"); });
-    const labels = document.createElement("span"); const title = document.createElement("strong"); title.textContent = def.label; const hint = document.createElement("small"); hint.textContent = def.hint; labels.append(title, hint); button.append(glyph, labels);
-    button.addEventListener("click", () => { if (running) return; selectedType = selectedType === type ? null : type; render(); status(selectedType ? `Fes clic al llenç per col·locar ${def.label}.` : "Eina cancel·lada."); });
-    button.addEventListener("dragstart", e => { if (running) { e.preventDefault(); return; } e.dataTransfer.setData("text/plain", type); });
-    $("libraryItems").append(button);
+    if (!typesByFamily.has(def.family)) typesByFamily.set(def.family, []);
+    typesByFamily.get(def.family).push([type, def]);
+  }
+  const families = [...typesByFamily.keys()].sort((a, b) => FAMILY_ORDER.indexOf(a) - FAMILY_ORDER.indexOf(b));
+  for (const family of families) {
+    const entries = typesByFamily.get(family), familyId = `family-${family}`;
+    const section = document.createElement("section"); section.className = "library-family";
+    const heading = document.createElement("button"); heading.type = "button"; heading.className = "family-toggle";
+    heading.setAttribute("aria-controls", familyId); heading.setAttribute("aria-expanded", String(!collapsedFamilies.has(family)));
+    const title = document.createElement("span"); title.textContent = FAMILIES[family] || family;
+    const count = document.createElement("small"); count.textContent = String(entries.length);
+    const chevron = document.createElement("span"); chevron.className = "family-chevron"; chevron.textContent = collapsedFamilies.has(family) ? "›" : "⌄"; chevron.setAttribute("aria-hidden", "true");
+    heading.append(title, count, chevron);
+    const items = document.createElement("div"); items.className = "family-components"; items.id = familyId; items.hidden = collapsedFamilies.has(family);
+    heading.addEventListener("click", () => {
+      if (collapsedFamilies.has(family)) collapsedFamilies.delete(family); else collapsedFamilies.add(family);
+      const expanded = !collapsedFamilies.has(family); heading.setAttribute("aria-expanded", String(expanded)); items.hidden = !expanded; chevron.textContent = expanded ? "⌄" : "›";
+    });
+    section.append(heading, items);
+    for (const [type, def] of entries) {
+      const button = document.createElement("button"); button.className = "library-item"; button.type = "button"; button.draggable = true; button.dataset.type = type;
+      const glyph = document.createElement("span"); glyph.className = "glyph"; glyph.setAttribute("aria-hidden", "true");
+      const preview = svg("svg", { viewBox: `0 0 ${def.w} ${def.h}`, width: 48, height: 34 }, glyph);
+      const previewGroup = svg("g", { class: "component" }, preview);
+      drawSymbol(previewGroup, { id: `preview-${type}`, type, properties: type === "valve5" ? { returnMode: "memory" } : {} });
+      preview.querySelectorAll("[role], [tabindex]").forEach(node => { node.removeAttribute("role"); node.removeAttribute("tabindex"); });
+      const labels = document.createElement("span"); const itemTitle = document.createElement("strong"); itemTitle.textContent = def.label; const hint = document.createElement("small"); hint.textContent = def.hint; labels.append(itemTitle, hint); button.append(glyph, labels);
+      button.addEventListener("click", () => { if (running) return; selectedType = selectedType === type ? null : type; render(); status(selectedType ? `Fes clic al llenç per col·locar ${def.label}.` : "Eina cancel·lada."); });
+      button.addEventListener("dragstart", e => { if (running) { e.preventDefault(); return; } e.dataTransfer.setData("text/plain", type); });
+      items.append(button);
+    }
+    host.append(section);
   }
 }
 function setupCanvas() {
