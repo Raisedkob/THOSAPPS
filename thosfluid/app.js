@@ -11,10 +11,10 @@ const MAX_CONNECTIONS = 160;
 
 const TYPES = {
   source: { label: "Font d'aire", short: "FONT", hint: "Pressió lògica", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
-  valve2: { label: "Vàlvula 2/2 NC", short: "2/2 NC", hint: "Polsador · molla", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0] } },
-  valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Polsador · molla", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
+  valve2: { label: "Vàlvula 2/2 NC", short: "2/2 NC", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0] } },
+  valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
   valve4: { label: "Vàlvula 4/2", short: "4/2", hint: "Palanca · enclavament", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [165, 155] } },
-  valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Dues posicions", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
+  valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Accionament manual", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
   single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", family: "actuators", w: 215, h: 140, ports: { A: [40, 140] } },
   double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", family: "actuators", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } }
 };
@@ -29,6 +29,9 @@ const FAMILIES = {
   electrical: "Electroneumàtica"
 };
 const collapsedFamilies = new Set();
+const DISTRIBUTORS = new Set(["valve2", "valve3", "valve4", "valve5"]);
+const DEFAULT_ACTUATOR = { valve2: "pushbutton", valve3: "pushbutton", valve4: "lever", valve5: "pushbutton" };
+const defaultValveProperties = type => ({ actuator: DEFAULT_ACTUATOR[type], returnMode: type === "valve2" || type === "valve3" ? "spring" : "memory" });
 
 const $ = id => document.getElementById(id);
 const svg = (tag, attrs = {}, parent) => {
@@ -85,7 +88,7 @@ function edit(action) {
 function resetRuntime() {
   runtime = { valves: {}, pressed: {}, cylinders: {} };
   for (const component of circuit.components) {
-    if (component.type === "valve4" || component.type === "valve5") runtime.valves[component.id] = false;
+    if (DISTRIBUTORS.has(component.type)) runtime.valves[component.id] = false;
     if (component.type === "single" || component.type === "double") runtime.cylinders[component.id] = "retracted";
   }
   simulation = null;
@@ -101,7 +104,7 @@ function setRunning(next) {
 }
 
 function makeComponent(type, x, y) {
-  return { id: makeId("c"), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, properties: type === "valve4" || type === "valve5" ? { returnMode: "memory" } : {} };
+  return { id: makeId("c"), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, properties: DISTRIBUTORS.has(type) ? defaultValveProperties(type) : {} };
 }
 function addComponent(type, x, y) {
   if (!TYPES[type] || circuit.components.length >= MAX_COMPONENTS) return status("No es poden afegir més components.");
@@ -173,7 +176,7 @@ function validateCircuit(data) {
   const name = String(data.metadata?.name || "Circuit nou").slice(0, 80);
   const zoom = Number.isFinite(data.view?.zoom) ? clamp(data.view.zoom, .55, 2.4) : 1;
   const pan = { x: Number.isFinite(data.view?.pan?.x) ? clamp(data.view.pan.x, -1500, 1500) : 0, y: Number.isFinite(data.view?.pan?.y) ? clamp(data.view.pan.y, -1000, 1000) : 0 };
-  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: c.type === "valve4" || c.type === "valve5" ? { returnMode: c.properties?.returnMode === "spring" ? "spring" : "memory" } : {} })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
+  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: DISTRIBUTORS.has(c.type) ? { actuator: ["pushbutton", "lever", "pedal"].includes(c.properties?.actuator) ? c.properties.actuator : DEFAULT_ACTUATOR[c.type], returnMode: c.properties?.returnMode === "spring" ? "spring" : c.properties?.returnMode === "memory" ? "memory" : defaultValveProperties(c.type).returnMode } : {} })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
 }
 function downloadCircuit() {
   const text = JSON.stringify(circuit, null, 2);
@@ -218,18 +221,18 @@ function buildSimulation() {
       exhaustSeeds.push(key(c.id, "R"));
       if (c.type === "valve5") exhaustSeeds.push(key(c.id, "S"));
     }
-    if (c.type === "valve2" && runtime.pressed[c.id]) link(key(c.id, "P"), key(c.id, "A"));
+    const properties = { ...defaultValveProperties(c.type), ...c.properties };
+    const active = properties.returnMode === "spring" ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
+    if (c.type === "valve2" && active) link(key(c.id, "P"), key(c.id, "A"));
     if (c.type === "valve3") {
-      if (runtime.pressed[c.id]) link(key(c.id, "P"), key(c.id, "A"));
+      if (active) link(key(c.id, "P"), key(c.id, "A"));
       else link(key(c.id, "A"), key(c.id, "R"));
     }
     if (c.type === "valve4") {
-      const active = !!runtime.valves[c.id] || !!runtime.pressed[c.id];
       if (active) { link(key(c.id, "P"), key(c.id, "A")); link(key(c.id, "B"), key(c.id, "R")); }
       else { link(key(c.id, "P"), key(c.id, "B")); link(key(c.id, "A"), key(c.id, "R")); }
     }
     if (c.type === "valve5") {
-      const active = !!runtime.valves[c.id] || !!runtime.pressed[c.id];
       if (active) { link(key(c.id, "P"), key(c.id, "A")); link(key(c.id, "B"), key(c.id, "S")); }
       else { link(key(c.id, "P"), key(c.id, "B")); link(key(c.id, "A"), key(c.id, "R")); }
     }
@@ -310,8 +313,9 @@ function drawSymbol(group, c, previousCylinderState) {
     svg("line", { x1: 61, y1: 50, x2: 105, y2: 50, class: "norm-port-line" }, group);
   } else if (["valve2", "valve3", "valve4", "valve5"].includes(c.type)) {
     const is2 = c.type === "valve2", is3 = c.type === "valve3", is4 = c.type === "valve4";
-    const momentary = is2 || is3 || (is4 || c.type === "valve5") && c.properties.returnMode === "spring";
-    const active = momentary ? !!runtime.pressed[c.id] : !!runtime.valves[c.id] || !!runtime.pressed[c.id];
+    const properties = { ...defaultValveProperties(c.type), ...c.properties };
+    const momentary = properties.returnMode === "spring";
+    const active = momentary ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
     const offset = active ? 60 : 0;
     const left = is2 || is3 ? 40 : 50;
     const spool = svg("g", { transform: `translate(${offset} 0)` }, group);
@@ -343,15 +347,21 @@ function drawSymbol(group, c, previousCylinderState) {
     for (const x of is3 ? [145] : is4 ? [165] : c.type === "valve5" ? [125, 165] : []) svg("path", { d: `M${x - 6} 134h12l-6 9z`, class: "symbol" }, group);
     if (momentary) symbolSpring(group, (is2 || is3 ? 164 : 174) + offset, 72, 27);
     let button;
-    const ariaLabel = is2 ? "Mantén premuda la vàlvula 2/2" : is3 ? "Mantén premut el polsador 3/2" : `Acciona la vàlvula ${is4 ? "4/2" : "5/2"}`;
-    if (is4) {
+    const actuator = properties.actuator || DEFAULT_ACTUATOR[c.type];
+    const actuatorLabel = actuator === "lever" ? "palanca" : actuator === "pedal" ? "pedal" : "polsador";
+    const article = actuator === "lever" ? "la" : "el";
+    const ariaLabel = momentary ? `Mantén premut ${article} ${actuatorLabel} de la vàlvula ${def.short}` : `Commuta la vàlvula ${def.short} amb ${article} ${actuatorLabel}`;
+    if (actuator === "lever") {
       button = svg("circle", { cx: 15, cy: 54, r: 6, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
       svg("path", { d: `M15 54l15 -18 M29 72H${left + offset}`, class: "symbol" }, group);
+    } else if (actuator === "pedal") {
+      button = svg("path", { d: "M5 62h9l12 10-12 10H5z", class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
+      svg("path", { d: `M26 72H${left + offset} M10 84l12 -7h8`, class: "symbol" }, group);
     } else {
       button = svg("rect", { x: 4, y: 56, width: 25, height: 32, rx: 2, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
       svg("path", { d: `M29 72H${left + offset} M10 50h13 M16 50v6`, class: "symbol" }, group);
     }
-    const trigger = e => { e.stopPropagation(); if (!running) return; if ((is4 || c.type === "valve5") && !momentary) { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
+    const trigger = e => { e.stopPropagation(); if (!running) return; if (!momentary) { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
     const release = e => { e.stopPropagation(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger);
     button.addEventListener("pointerup", release);
@@ -419,18 +429,27 @@ function renderInspector() {
   $("inspectorTitle").textContent = TYPES[c.type].label;
   for (const portId of Object.keys(TYPES[c.type].ports)) { const pill = document.createElement("span"); pill.className = "pill"; pill.textContent = `${portId}: ${portState(c.id, portId) === "pressure" ? "pressió" : portState(c.id, portId) === "exhaust" ? "escapament" : "sense pressió"}`; panel.append(pill); }
   if (c.type === "single" || c.type === "double") { const p = document.createElement("p"); p.textContent = `Èmbol: ${runtime.cylinders[c.id] === "extended" ? "estès" : "retret"}`; panel.append(p); }
-  if ((c.type === "valve4" || c.type === "valve5") && !running) {
+  if (DISTRIBUTORS.has(c.type) && !running) {
+    const actuatorLabel = document.createElement("label"); actuatorLabel.className = "field-label"; actuatorLabel.textContent = "Accionament"; actuatorLabel.htmlFor = "actuatorMode"; panel.append(actuatorLabel);
+    const actuatorSelect = document.createElement("select"); actuatorSelect.id = "actuatorMode"; actuatorSelect.className = "text-field";
+    for (const [value, text] of [["pushbutton", "Polsador"], ["lever", "Palanca"], ["pedal", "Pedal"]]) { const opt = document.createElement("option"); opt.value = value; opt.textContent = text; actuatorSelect.append(opt); }
+    actuatorSelect.value = c.properties.actuator || DEFAULT_ACTUATOR[c.type];
+    actuatorSelect.addEventListener("change", () => edit(() => { c.properties.actuator = actuatorSelect.value; })); panel.append(actuatorSelect);
     const label = document.createElement("label"); label.className = "field-label"; label.textContent = "Retorn"; label.htmlFor = "returnMode"; panel.append(label);
     const select = document.createElement("select"); select.id = "returnMode"; select.className = "text-field";
-    for (const [value, text] of [["memory", "Enclavament"], ["spring", "Molla"]]) { const opt = document.createElement("option"); opt.value = value; opt.textContent = text; select.append(opt); }
-    select.value = c.properties.returnMode;
+    for (const [value, text] of [["spring", "Molla de retorn"], ["memory", "Posició mantinguda"]]) { const opt = document.createElement("option"); opt.value = value; opt.textContent = text; select.append(opt); }
+    select.value = c.properties.returnMode || defaultValveProperties(c.type).returnMode;
     select.addEventListener("change", () => edit(() => { c.properties.returnMode = select.value; })); panel.append(select);
   }
-  if (running && ["valve2", "valve3", "valve4", "valve5"].includes(c.type)) {
+  if (running && DISTRIBUTORS.has(c.type)) {
     const button = document.createElement("button"); button.className = "secondary wide";
-    const momentary = c.type === "valve2" || c.type === "valve3" || ((c.type === "valve4" || c.type === "valve5") && c.properties.returnMode === "spring");
-    button.textContent = momentary ? "Mantén premut" : "Commuta la vàlvula";
-    const trigger = e => { e.preventDefault(); if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; else { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } render(); };
+    const properties = { ...defaultValveProperties(c.type), ...c.properties };
+    const momentary = properties.returnMode === "spring";
+    const actuator = properties.actuator;
+    const actuatorLabel = actuator === "lever" ? "palanca" : actuator === "pedal" ? "pedal" : "polsador";
+    const article = actuator === "lever" ? "la" : "el";
+    button.textContent = momentary ? `Mantén premut ${article} ${actuatorLabel}` : `Commuta amb ${article} ${actuatorLabel}`;
+    const trigger = e => { e.preventDefault(); if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } render(); };
     const release = e => { e.preventDefault(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
     button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") trigger(e); });
@@ -465,7 +484,7 @@ function loadExample(kind) {
   const single = is2 || is3;
   const source = { id: "font", type: "source", x: 100, y: 270, properties: {} };
   const valveType = is2 ? "valve2" : is3 ? "valve3" : is4 ? "valve4" : "valve5";
-  const valve = { id: "valvula", type: valveType, x: 395, y: 255, properties: is4 || !single ? { returnMode: "memory" } : {} };
+  const valve = { id: "valvula", type: valveType, x: 395, y: 255, properties: defaultValveProperties(valveType) };
   const cylinder = { id: "cilindre", type: single ? "single" : "double", x: 800, y: 260, properties: {} };
   const connections = [
     { id: "conducte_p", from: { componentId: "font", portId: "P" }, to: { componentId: "valvula", portId: "P" } },
@@ -629,3 +648,4 @@ function init() {
   resetRuntime(); render();
 }
 init();
+
