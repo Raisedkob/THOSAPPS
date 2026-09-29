@@ -10,7 +10,9 @@ const MAX_COMPONENTS = 80;
 const MAX_CONNECTIONS = 160;
 
 const TYPES = {
-  source: { label: "Font d'aire", short: "FONT", hint: "Pressió lògica", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
+  source: { label: "Font d'aire", short: "FONT", hint: "Equivalent al compressor", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
+  receiver: { label: "Acumulador", short: "ACUMULADOR", hint: "Pas d'aire; sense acumulació calculada", glyph: "▱", family: "supply", w: 200, h: 120, ports: { P: [0, 60], A: [200, 60] } },
+  maintenance: { label: "Unitat de manteniment", short: "FILTRE · REGULADOR · LUBRICADOR", hint: "Passa l'aire; sense regulació física", glyph: "⚙", family: "supply", w: 260, h: 140, ports: { P: [0, 70], A: [260, 70] } },
   valve2: { label: "Vàlvula 2/2 NC", short: "2/2 NC", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0] } },
   valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
   valve4: { label: "Vàlvula 4/2", short: "4/2", hint: "Palanca · enclavament", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [165, 155] } },
@@ -217,6 +219,7 @@ function buildSimulation() {
   for (const c of circuit.components) {
     for (const portId of Object.keys(TYPES[c.type].ports)) ensure(key(c.id, portId));
     if (c.type === "source") pressureSeeds.push(key(c.id, "P"));
+    if (c.type === "receiver" || c.type === "maintenance") link(key(c.id, "P"), key(c.id, "A"));
     if (c.type === "valve3" || c.type === "valve4" || c.type === "valve5") {
       exhaustSeeds.push(key(c.id, "R"));
       if (c.type === "valve5") exhaustSeeds.push(key(c.id, "S"));
@@ -311,6 +314,26 @@ function drawSymbol(group, c, previousCylinderState) {
     svg("circle", { cx: 48, cy: 50, r: 13, class: "symbol" }, group);
     svg("circle", { cx: 48, cy: 50, r: 3, class: "symbol-fill" }, group);
     svg("line", { x1: 61, y1: 50, x2: 105, y2: 50, class: "norm-port-line" }, group);
+  } else if (c.type === "receiver") {
+    svg("line", { x1: 0, y1: 60, x2: 38, y2: 60, class: "norm-port-line" }, group);
+    svg("line", { x1: 162, y1: 60, x2: 200, y2: 60, class: "norm-port-line" }, group);
+    svg("rect", { x: 38, y: 40, width: 124, height: 40, rx: 20, class: "symbol" }, group);
+    svg("line", { x1: 100, y1: 80, x2: 100, y2: 96, class: "symbol" }, group);
+    svg("path", { d: "M92 96h16l-8 9z", class: "symbol" }, group);
+    svgText(group, 100, 115, "acumulador", "sub", { "text-anchor": "middle" });
+  } else if (c.type === "maintenance") {
+    svg("line", { x1: 0, y1: 70, x2: 26, y2: 70, class: "norm-port-line" }, group);
+    svg("line", { x1: 234, y1: 70, x2: 260, y2: 70, class: "norm-port-line" }, group);
+    svg("line", { x1: 26, y1: 70, x2: 234, y2: 70, class: "symbol" }, group);
+    svg("path", { d: "M64 48l22 22-22 22-22-22z M42 70h44 M64 92v12", class: "symbol" }, group);
+    svg("rect", { x: 86, y: 48, width: 64, height: 44, class: "symbol" }, group);
+    svg("path", { d: "M98 82l26-24 M118 70h25 M118 70v-20", class: "symbol" }, group);
+    svg("circle", { cx: 126, cy: 34, r: 10, class: "symbol" }, group);
+    svg("line", { x1: 126, y1: 34, x2: 130, y2: 29, class: "symbol" }, group);
+    svg("path", { d: "M172 48l22 22-22 22-22-22z M150 70h44", class: "symbol" }, group);
+    svgText(group, 64, 116, "filtre", "sub", { "text-anchor": "middle" });
+    svgText(group, 118, 116, "regulador", "sub", { "text-anchor": "middle" });
+    svgText(group, 172, 116, "lubricador", "sub", { "text-anchor": "middle" });
   } else if (["valve2", "valve3", "valve4", "valve5"].includes(c.type)) {
     const is2 = c.type === "valve2", is3 = c.type === "valve3", is4 = c.type === "valve4";
     const properties = { ...defaultValveProperties(c.type), ...c.properties };
@@ -480,6 +503,22 @@ function render() {
 }
 function loadExample(kind) {
   if (dirty && !confirm("Hi ha canvis no descarregats. Vols obrir un exemple?")) return;
+  if (kind === "supply") {
+    const source = { id: "compressor", type: "source", x: 80, y: 195, properties: {} };
+    const receiver = { id: "diposit", type: "receiver", x: 230, y: 175, properties: {} };
+    const maintenance = { id: "manteniment", type: "maintenance", x: 500, y: 155, properties: {} };
+    const valve = { id: "valvula", type: "valve3", x: 405, y: 400, properties: defaultValveProperties("valve3") };
+    const cylinder = { id: "cilindre", type: "single", x: 780, y: 395, properties: {} };
+    circuit = { format: FORMAT, version: VERSION, metadata: { name: "Exemple: alimentació i preparació de l'aire" }, components: [source, receiver, maintenance, valve, cylinder], connections: [
+      { id: "aire_font", from: { componentId: source.id, portId: "P" }, to: { componentId: receiver.id, portId: "P" } },
+      { id: "aire_diposit", from: { componentId: receiver.id, portId: "A" }, to: { componentId: maintenance.id, portId: "P" } },
+      { id: "aire_unitat", from: { componentId: maintenance.id, portId: "A" }, to: { componentId: valve.id, portId: "P" } },
+      { id: "aire_valvula", from: { componentId: valve.id, portId: "A" }, to: { componentId: cylinder.id, portId: "A" } }
+    ], view: { zoom: .86, pan: { x: 40, y: 10 } } };
+    selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
+    status("Exemple d'alimentació carregat. Simula'l i acciona la vàlvula 3/2.");
+    return;
+  }
   const is2 = kind === "twoTwo", is3 = kind === "simple", is4 = kind === "fourTwo";
   const single = is2 || is3;
   const source = { id: "font", type: "source", x: 100, y: 270, properties: {} };
@@ -609,6 +648,7 @@ function setupControls() {
   $("zoomInBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom * 1.2, .55, 2.4); render(); });
   $("zoomOutBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom / 1.2, .55, 2.4); render(); });
   $("fitBtn").addEventListener("click", () => { circuit.view = { zoom: 1, pan: { x: 0, y: 0 } }; render(); });
+  $("exampleSupplyBtn").addEventListener("click", () => loadExample("supply"));
   $("exampleValve2Btn").addEventListener("click", () => loadExample("twoTwo"));
   $("exampleSimpleBtn").addEventListener("click", () => loadExample("simple"));
   $("exampleValve4Btn").addEventListener("click", () => loadExample("fourTwo"));
