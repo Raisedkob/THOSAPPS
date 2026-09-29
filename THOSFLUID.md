@@ -37,9 +37,9 @@ La portada ha d'incloure una **targeta activa THOSFLUID** amb el mateix format 1
 
 ### MVP incorporat al repositori
 
-La primera versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. Permet col·locar i moure font, vàlvules 3/2 i 5/2 i cilindres de simple i doble efecte, agrupats a la biblioteca per famílies; connectar ports, simular la pressió i l'escapament, accionar les vàlvules, veure el moviment del cilindre, desfer/refer, fer zoom, descarregar i obrir JSON, i activar una única còpia local de recuperació. La resta de components i l'electropneumàtica s'afegeixen en les fases següents. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
+La primera versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. Permet col·locar i moure font, vàlvules 2/2 NC, 3/2, 4/2 i 5/2 i cilindres de simple i doble efecte, agrupats a la biblioteca per famílies; connectar ports, simular la pressió i l'escapament, accionar les vàlvules, veure el moviment del cilindre, desfer/refer, fer zoom, descarregar i obrir JSON, i activar una única còpia local de recuperació. La resta de components i l'electropneumàtica s'afegeixen en les fases següents. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
 
-**Límits del MVP:** cinc tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; encara no hi ha pilotatges, finals de cursa ni temporitzadors. El simple efecte retorna quan no rep pressió; la retenció d'una cambra aïllada s'haurà de precisar abans d'afegir vàlvules de bloqueig. Els apartats següents descriuen l'objectiu complet de V1, no una llista de funcions ja disponibles.
+**Límits del MVP:** set tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; encara no hi ha pilotatges, finals de cursa ni temporitzadors. El cilindre de simple efecte retorna quan la cambra descarrega per una sortida oberta; si una 2/2 la tanca després d'haver avançat, conserva qualitativament l'estat estès. Els apartats següents descriuen l'objectiu complet de V1, no una llista de funcions ja disponibles.
 
 El repositori actual publica pàgines HTML a l'arrel. `index.html` conté la navegació i les targetes de les eines; `thosdruino.html` és una aplicació en una sola pàgina; `thosvincle.html` és una pàgina d'entrada que integra `thosvincle-app.html` en un `iframe`. `sitemap.xml` enumera URL públiques. **Abans de programar, Codex ha de tornar a inspeccionar el repositori**, perquè la seva estructura pot haver canviat.
 
@@ -268,11 +268,11 @@ Fer servir colors **i també** patrons, icones o text per diferenciar pressió, 
 
 Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després de cada acció. Han de servir de referència durant el desenvolupament del motor i de revisió visual de l'app.
 
-**Cobertura actual:** l'app inclou exemples incorporats dels casos 1 i 2; el cas 3 es configura canviant el retorn de la 5/2 a molla. Els casos 4–10 són criteris pendents de les fases següents; encara no es poden muntar tots amb el catàleg publicat.
+**Cobertura actual:** l'app inclou exemples incorporats de 2/2 NC, 3/2, 4/2 i 5/2 amb els cilindres compatibles. Es poden muntar els casos 1, 2 i 4; el cas 3 es configura canviant el retorn de la 5/2 a molla. Els casos 5–10 són criteris pendents de les fases següents; encara no es poden muntar tots amb el catàleg publicat.
 
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
-| 1 | Font → 3/2 NC amb polsador i molla → cilindre de simple efecte | Prémer: `P–A`, avançament. Deixar anar: `A–R`, escapament i retorn. |
+| 1 | Font → 3/2 NC amb polsador i molla → cilindre simple; variant 2/2 NC | Amb 3/2: prémer avança i deixar anar connecta `A–R`, descarrega i retorna. Amb 2/2: prémer avança i deixar anar tanca el pas; la cambra conserva qualitativament l'estat estès. |
 | 2 | Font → 5/2 biestable → cilindre de doble efecte | Ordre A: avançament; ordre B: retrocés; en cada estat es mostren les dues comunicacions internes correctes. |
 | 3 | 5/2 monoestable i cilindre de doble efecte | L'accionament canvia la posició; en deixar-lo anar la molla retorna la vàlvula i el cilindre segons els ports connectats. |
 | 4 | 4/2 i cilindre de doble efecte | Les dues posicions inverteixen alimentació i descàrrega de les cambres. |
@@ -291,17 +291,17 @@ Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després 
 
 Base publicada: entrada, portada, navegació, editor i fitxers locals. Les funcions avançades d'edició continuen pendents.
 
-Revisar el repositori real; crear l'entrada THOSFLUID i el llenç independent, biblioteca, selecció, connexions, desfer/refés i JSON versionat. Mantenir la ruta `thosfluid.html`. La targeta pública de l'índex s'activa quan l'app funcional estigui preparada.
+Integració publicada: entrada THOSFLUID i llenç independent, biblioteca per famílies, selecció, connexions, desfer/refés i JSON versionat. Mantenir la ruta `thosfluid.html` i la targeta activa de l'índex.
 
 ### Fase 1 — MVP pneumàtic
 
-Nucli publicat amb 3/2 i 5/2, exemples i recuperació local. Queden pendents l'avanç pas a pas i completar la verificació dels tres casos i del flux d'importació en navegadors d'aula.
+Nucli publicat amb distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Queden pendents l'avanç pas a pas i completar la verificació de tots els casos i del flux d'importació en navegadors d'aula.
 
-Font, cilindres simple i doble, 3/2 i 5/2, polsador, molla, motor discret, pressió/escapament visibles i controls **Edita/Simula/Atura/Reinicia/Pas a pas**. Cobrir els circuits 1–3.
+Font, cilindres simple i doble, 2/2 NC, 3/2, 4/2 i 5/2, polsador, molla, motor discret, pressió/escapament visibles i controls **Edita/Simula/Atura/Reinicia/Pas a pas**. Cobrir els circuits 1–4 i 11.
 
 ### Fase 2 — Lògica i seqüències
 
-2/2 i 4/2, accionaments mecànics, pilotatge, finals de cursa, antiretorn, regulador qualitatiu, AND/OR i temporitzador. Cobrir els circuits 4–8 i 10.
+Ja disponibles: vàlvules 2/2 NC i 4/2, amb exemples de circuit. Queden pendents els accionaments mecànics, pilotatge, finals de cursa, antiretorn, regulador qualitatiu, AND/OR i temporitzador. Cobrir els circuits 5–8 i 10.
 
 ### Fase 3 — Electropneumàtica
 
