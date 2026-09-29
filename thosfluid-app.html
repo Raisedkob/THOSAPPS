@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THOSFLUID — Simulador pneumàtic</title>
-  <link rel="stylesheet" href="thosfluid/app.css?v=20260929-distribuidors">
-  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-biblioteca-estesa">
-  <script src="thosfluid/app.js?v=20260929-biblioteca-estesa" defer></script>
+  <link rel="stylesheet" href="thosfluid/app.css?v=20260929-ediccio-v2">
+  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-ediccio-v2">
+  <script src="thosfluid/app.js?v=20260929-ediccio-v2" defer></script>
 </head>
 <body>
   <div class="app">
@@ -21,6 +21,10 @@
           <input id="fileInput" type="file" accept=".json,application/json" hidden>
         </div>
         <div class="toolgroup" aria-label="Edició">
+          <button id="panBtn" aria-pressed="false" title="PAN: moure la vista del llenç">PAN</button>
+          <button id="textBtn" title="Afegeix una anotació de text">Text</button>
+          <button id="copyBtn" title="Copia el component seleccionat" disabled>Copia</button>
+          <button id="pasteBtn" title="Enganxa una còpia del component" disabled>Enganxa</button>
           <button id="undoBtn" title="Desfés (Ctrl+Z)">↶ <span>Desfés</span></button>
           <button id="redoBtn" title="Refés (Ctrl+Y)">↷ <span>Refés</span></button>
           <button id="deleteBtn" title="Esborra la selecció (Supr)">Esborra</button>
@@ -45,21 +49,26 @@
         <div class="library-footer">
           <button id="exampleSupplyBtn">Exemple alimentació</button>
           <button id="exampleFlowBtn">Exemple regulador</button>
+          <button id="exampleBranchBtn">Exemple derivació en T</button>
           <button id="exampleValve2Btn">Exemple 2/2</button>
           <button id="exampleSimpleBtn">Exemple 3/2</button>
           <button id="exampleValve4Btn">Exemple 4/2</button>
           <button id="exampleDoubleBtn">Exemple 5/2</button>
+          <button id="exampleLimitBtn">Exemple final de cursa</button>
+          <button id="exampleLogicBtn">Exemple lògica AND</button>
+          <button id="exampleTimerBtn">Exemple temporitzador</button>
+          <button id="exampleElectricBtn">Exemple electroneumàtica</button>
         </div>
       </aside>
 
       <section class="canvas-panel" aria-label="Editor de circuits">
         <div class="canvas-top"><span id="modeLabel">Mode edició</span><span id="canvasHint">Clica dos ports per connectar-los.</span></div>
-        <svg id="circuitCanvas" viewBox="0 0 1200 700" role="group" aria-label="Llenç del circuit">
+        <svg id="circuitCanvas" viewBox="0 0 1200 700" role="group" tabindex="0" aria-label="Llenç del circuit. Amb una connexió pendent, les fletxes del teclat mouen el punt de recorregut i Retorn l'afegeix.">
           <defs><pattern id="grid" width="25" height="25" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#353535"/></pattern></defs>
           <rect width="1200" height="700" fill="url(#grid)" data-background="1"></rect>
           <g id="world"></g>
         </svg>
-        <div class="legend"><span><i class="line pressure"></i> Pressió</span><span><i class="line exhaust"></i> Escapament</span><span><i class="line idle"></i> Sense pressió</span><span>Els traços en moviment indiquen el sentit del flux</span></div>
+        <div class="legend"><span><i class="line pressure"></i> Pressió</span><span><i class="line exhaust"></i> Escapament</span><span><i class="line idle"></i> Sense pressió</span><span><i class="line electric"></i> Cable actiu</span><span>Els traços en moviment indiquen el sentit del flux</span></div>
         <aside id="componentInspector" class="inspector floating-panel" aria-label="Propietats del component" hidden>
           <div id="inspectorHandle" class="panel-heading">
             <strong id="inspectorTitle">Component</strong>
