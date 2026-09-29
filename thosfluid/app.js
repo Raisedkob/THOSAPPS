@@ -22,6 +22,7 @@ const TYPES = {
   quickExhaust: { label: "Vàlvula d'escapament ràpid", short: "ESCAPAMENT RÀPID", hint: "Alimenta l'actuador i evacua l'aire directament", glyph: "↗", family: "regulation", w: 220, h: 130, ports: { P: [0, 60], A: [220, 60], R: [110, 130] } },
   valve2: { label: "Vàlvula 2/2 NC", short: "2/2 NC", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0] } },
   valve3: { label: "Vàlvula 3/2 NC/NO", short: "3/2", hint: "Posició normal NC o NO configurable", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
+  valve3Pilot: { label: "Vàlvula 3/2 pilotada pneumàticament", short: "3/2 PILOTADA", hint: "Connecta P–A quan rep pressió al pilot X; en repòs connecta A–R", glyph: "⇄", family: "valves", w: 280, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155], X: [0, 72] } },
   valve4: { label: "Vàlvula 4/2", short: "4/2", hint: "Palanca · enclavament", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [165, 155] } },
   valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Accionament manual", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
   valve53: { label: "Vàlvula 5/3", short: "5/3", hint: "Centre tancat, a escapament o a pressió", glyph: "⇅", family: "valves", w: 300, h: 155, ports: { P: [165, 155], A: [155, 0], B: [180, 0], R: [145, 155], S: [185, 155] } },
@@ -30,6 +31,7 @@ const TYPES = {
   logicOr: { label: "Vàlvula lògica OR", short: "OR", hint: "La sortida s'activa amb qualsevol entrada", glyph: "∨", family: "logic", w: 220, h: 120, ports: { X: [0, 35], Y: [0, 85], A: [220, 60] } },
   logicAnd: { label: "Vàlvula lògica AND", short: "AND", hint: "La sortida s'activa amb dues entrades", glyph: "∧", family: "logic", w: 220, h: 120, ports: { X: [0, 35], Y: [0, 85], A: [220, 60] } },
   timer3: { label: "Temporitzador pneumàtic 3/2", short: "TEMPORITZADOR", hint: "Retard qualitatiu a l'activació", glyph: "◷", family: "logic", w: 220, h: 140, ports: { P: [0, 70], A: [220, 70], R: [110, 140], X: [110, 0] } },
+  pressureSequence: { label: "Vàlvula seqüencial de pressió", short: "SEQÜÈNCIA", hint: "Activa P–A després d'un llindar qualitatiu al senyal X", glyph: "◷", family: "logic", w: 250, h: 145, ports: { P: [0, 72], A: [250, 72], R: [125, 145], X: [125, 0] } },
   single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", family: "actuators", w: 215, h: 140, ports: { A: [40, 140] } },
   double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", family: "actuators", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } },
   electricSource: { label: "Font elèctrica", short: "FONT ELÈCTRICA", hint: "Alimentació lògica, sense tensió calculada", glyph: "⏚", family: "electrical", w: 150, h: 100, ports: { plus: [150, 30], minus: [150, 70] } },
@@ -37,7 +39,9 @@ const TYPES = {
   electricPushNC: { label: "Polsador elèctric NC", short: "POLSADOR NC", hint: "Obre el contacte mentre es prem", glyph: "○", family: "electrical", w: 155, h: 100, ports: { "1": [0, 50], "2": [155, 50] } },
   electricSwitch: { label: "Interruptor elèctric", short: "INTERRUPTOR", hint: "Canvia entre obert i tancat", glyph: "I", family: "electrical", w: 155, h: 100, ports: { "1": [0, 50], "2": [155, 50] } },
   electricLimit: { label: "Final de cursa elèctric", short: "FINAL ELÈCTRIC", hint: "Canvia amb la posició del cilindre", glyph: "FC", family: "electrical", w: 180, h: 100, ports: { "1": [0, 50], "2": [180, 50] } },
+  magneticSensor: { label: "Sensor magnètic de cilindre", short: "SENSOR MAGNÈTIC", hint: "Tanca el contacte quan el cilindre arriba a l'extrem triat", glyph: "SM", family: "electrical", w: 190, h: 100, ports: { "1": [0, 50], "2": [190, 50] } },
   relayCoil: { label: "Bobina de relé", short: "RELÉ", hint: "Activa els contactes amb la mateixa referència", glyph: "K", family: "electrical", w: 160, h: 100, ports: { A1: [0, 35], A2: [0, 70] } },
+  electricTimerRelay: { label: "Relé temporitzador elèctric", short: "RELÉ TEMPORITZAT", hint: "Després del retard qualitatiu, tanca el contacte 15–18", glyph: "KT", family: "electrical", w: 190, h: 115, ports: { A1: [0, 28], A2: [0, 78], "15": [0, 100], "18": [190, 100] } },
   relayContactNO: { label: "Contacte de relé NO", short: "RELÉ NO", hint: "Tanca quan s'activa el relé vinculat", glyph: "K", family: "electrical", w: 160, h: 100, ports: { "13": [0, 50], "14": [160, 50] } },
   relayContactNC: { label: "Contacte de relé NC", short: "RELÉ NC", hint: "Obre quan s'activa el relé vinculat", glyph: "K", family: "electrical", w: 160, h: 100, ports: { "21": [0, 50], "22": [160, 50] } },
   valve5Electric: { label: "Electrovàlvula 5/2 monoestable", short: "5/2 ELÈCTRICA", hint: "Bobina elèctrica i retorn per molla", glyph: "Y", family: "electrical", w: 290, h: 155, ports: { P: [155, 155], A: [145, 0], B: [170, 0], R: [135, 155], S: [175, 155], X1: [0, 55], X2: [0, 95] } },
@@ -56,7 +60,7 @@ const FAMILIES = {
 };
 const collapsedFamilies = new Set();
 const DISTRIBUTORS = new Set(["valve2", "valve3", "valve4", "valve5"]);
-const ELECTRICAL_TYPES = new Set(["electricSource", "electricPush", "electricPushNC", "electricSwitch", "electricLimit", "relayCoil", "relayContactNO", "relayContactNC", "electricJunction"]);
+const ELECTRICAL_TYPES = new Set(["electricSource", "electricPush", "electricPushNC", "electricSwitch", "electricLimit", "magneticSensor", "relayCoil", "electricTimerRelay", "relayContactNO", "relayContactNC", "electricJunction"]);
 function isElectricalPort(type, portId) { return ELECTRICAL_TYPES.has(type) || (type === "valve5Electric" && (portId === "X1" || portId === "X2")) || (type === "valve5ElectricBistable" && ["X1", "X2", "common"].includes(portId)); }
 const DEFAULT_ACTUATOR = { valve2: "pushbutton", valve3: "pushbutton", valve4: "lever", valve5: "pushbutton" };
 const defaultValveProperties = type => ({ actuator: DEFAULT_ACTUATOR[type], returnMode: type === "valve2" || type === "valve3" ? "spring" : "memory", ...(type === "valve3" ? { normallyOpen: false } : {}) });
@@ -68,9 +72,11 @@ function defaultProperties(type) {
   if (type === "checkValve") return { direction: "PtoA" };
   if (type === "limitValve3") return { targetCylinder: "", targetEnd: "extended", actuator: "roller" };
   if (type === "timer3") return { delay: "medium" };
+  if (type === "pressureSequence" || type === "electricTimerRelay") return { delay: "medium" };
   if (type === "relayCoil" || type === "relayContactNO" || type === "relayContactNC") return { relay: "K1" };
   if (type === "note") return { text: "Escriu una nota" };
   if (type === "electricLimit") return { targetCylinder: "", targetEnd: "extended" };
+  if (type === "magneticSensor") return { targetCylinder: "", targetEnd: "extended" };
   return {};
 }
 function normalizeProperties(type, properties = {}) {
@@ -81,9 +87,11 @@ function normalizeProperties(type, properties = {}) {
   if (type === "valve53") return { center: ["closed", "exhaust", "pressure"].includes(properties.center) ? properties.center : "closed" };
   if (type === "limitValve3") return { targetCylinder: typeof properties.targetCylinder === "string" ? properties.targetCylinder : "", targetEnd: properties.targetEnd === "retracted" ? "retracted" : "extended", actuator: ["direct", "roller", "cam"].includes(properties.actuator) ? properties.actuator : "roller" };
   if (type === "timer3") return { delay: ["short", "medium", "long"].includes(properties.delay) ? properties.delay : "medium" };
+  if (type === "pressureSequence" || type === "electricTimerRelay") return { delay: ["short", "medium", "long"].includes(properties.delay) ? properties.delay : "medium" };
   if (type === "relayCoil" || type === "relayContactNO" || type === "relayContactNC") return { relay: String(properties.relay || "K1").slice(0, 12) };
   if (type === "note") return { text: String(properties.text || "Escriu una nota").slice(0, 120) };
   if (type === "electricLimit") return { targetCylinder: typeof properties.targetCylinder === "string" ? properties.targetCylinder : "", targetEnd: properties.targetEnd === "retracted" ? "retracted" : "extended" };
+  if (type === "magneticSensor") return { targetCylinder: typeof properties.targetCylinder === "string" ? properties.targetCylinder : "", targetEnd: properties.targetEnd === "retracted" ? "retracted" : "extended" };
   return {};
 }
 
@@ -165,7 +173,7 @@ function resetRuntime() {
     if (DISTRIBUTORS.has(component.type)) runtime.valves[component.id] = false;
     if (component.type === "valve53") runtime.valves[component.id] = "center";
     if (component.type === "valve5Pilot") runtime.valves[component.id] = false;
-    if (component.type === "timer3") { runtime.timers[component.id] = false; runtime.timerTicks[component.id] = 0; }
+    if (["timer3", "pressureSequence", "electricTimerRelay"].includes(component.type)) { runtime.timers[component.id] = false; runtime.timerTicks[component.id] = 0; }
     if (component.type === "valve5Electric") runtime.valves[component.id] = false;
     if (component.type === "valve5ElectricBistable") runtime.valves[component.id] = false;
     if (component.type === "electricSwitch") runtime.valves[component.id] = false;
@@ -413,6 +421,8 @@ function buildElectricalSimulation() {
       if (c.type === "electricPushNC" && !runtime.pressed[c.id]) link(key(c.id, "1"), key(c.id, "2"));
       if (c.type === "electricSwitch" && runtime.valves[c.id]) link(key(c.id, "1"), key(c.id, "2"));
       if (c.type === "electricLimit") { const target = targetCylinderFor(c); if (target && runtime.cylinders[target.id] === (c.properties?.targetEnd || "extended")) link(key(c.id, "1"), key(c.id, "2")); }
+      if (c.type === "magneticSensor") { const target = targetCylinderFor(c); if (target && runtime.cylinders[target.id] === (c.properties?.targetEnd || "extended")) link(key(c.id, "1"), key(c.id, "2")); }
+      if (c.type === "electricTimerRelay" && runtime.timers[c.id]) link(key(c.id, "15"), key(c.id, "18"));
       if (c.type === "relayContactNO" && relays[c.properties?.relay || "K1"]) link(key(c.id, "13"), key(c.id, "14"));
       if (c.type === "relayContactNC" && !relays[c.properties?.relay || "K1"]) link(key(c.id, "21"), key(c.id, "22"));
     }
@@ -424,6 +434,7 @@ function buildElectricalSimulation() {
     Object.assign(relays, nextRelays);
     for (const c of circuit.components) {
       if (c.type === "valve5Electric") energized[c.id] = plus.has(key(c.id, "X1")) && minus.has(key(c.id, "X2"));
+      if (c.type === "electricTimerRelay") energized[c.id] = plus.has(key(c.id, "A1")) && minus.has(key(c.id, "A2"));
       if (c.type === "valve5ElectricBistable") {
         energized[`${c.id}:A`] = plus.has(key(c.id, "X1")) && minus.has(key(c.id, "common"));
         energized[`${c.id}:B`] = plus.has(key(c.id, "X2")) && minus.has(key(c.id, "common"));
@@ -467,11 +478,14 @@ function buildSimulation(advanceTimeStep = false) {
       if (c.properties?.regulatedDirection === "AtoP") linkRates(port("P"), port("A"), 3, rate);
       else linkRates(port("P"), port("A"), rate, 3);
     }
-    if (["valve3", "valve4", "valve5", "valve53", "valve5Pilot", "valve5Electric", "valve5ElectricBistable", "limitValve3", "timer3", "quickExhaust"].includes(c.type)) exhaustSeeds.push(port("R"));
+    if (["valve3", "valve3Pilot", "valve4", "valve5", "valve53", "valve5Pilot", "valve5Electric", "valve5ElectricBistable", "limitValve3", "timer3", "pressureSequence", "quickExhaust"].includes(c.type)) exhaustSeeds.push(port("R"));
     if (["valve5", "valve53", "valve5Pilot", "valve5Electric", "valve5ElectricBistable"].includes(c.type)) exhaustSeeds.push(port("S"));
     const active = c.properties?.returnMode === "spring" ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
     if (c.type === "valve2" && active) link(port("P"), port("A"));
-    if (c.type === "valve3") (active !== (c.properties?.normallyOpen === true)) ? link(port("P"), port("A")) : link(port("A"), port("R"));
+    if (c.type === "valve3" || c.type === "valve3Pilot") {
+      const open = c.type === "valve3Pilot" ? !!runtime.valves[c.id] : active !== (c.properties?.normallyOpen === true);
+      open ? link(port("P"), port("A")) : link(port("A"), port("R"));
+    }
     if (c.type === "valve4") {
       if (active) { link(port("P"), port("A")); link(port("B"), port("R")); }
       else { link(port("P"), port("B")); link(port("A"), port("R")); }
@@ -493,7 +507,7 @@ function buildSimulation(advanceTimeStep = false) {
       const triggered = !!targetId && runtime.cylinders[targetId] === (c.properties?.targetEnd || "extended");
       if (triggered) link(port("P"), port("A")); else link(port("A"), port("R"));
     }
-    if (c.type === "timer3") {
+    if (c.type === "timer3" || c.type === "pressureSequence") {
       if (runtime.timers[c.id]) link(port("P"), port("A")); else link(port("A"), port("R"));
     }
   }
@@ -596,12 +610,17 @@ function buildSimulation(advanceTimeStep = false) {
   }
   let cylinderChanged = false;
   for (const c of circuit.components) if ((c.type === "single" || c.type === "double") && oldCylinders[c.id] !== runtime.cylinders[c.id]) cylinderChanged = true;
-  if (cylinderChanged && circuit.components.some(c => c.type === "limitValve3" || c.type === "electricLimit")) queueSimulationRefresh();
+  if (cylinderChanged && circuit.components.some(c => ["limitValve3", "electricLimit", "magneticSensor"].includes(c.type))) queueSimulationRefresh();
+  for (const c of circuit.components.filter(item => item.type === "valve3Pilot")) {
+    const signal = pressure.has(key(c.id, "X"));
+    if (runtime.valves[c.id] !== signal) { runtime.valves[c.id] = signal; queueSimulationRefresh(); }
+  }
   for (const c of circuit.components.filter(item => item.type === "valve5Pilot")) {
     const x = pressure.has(key(c.id, "X")), y = pressure.has(key(c.id, "Y"));
     if (x !== y && runtime.valves[c.id] !== x) { runtime.valves[c.id] = x; queueSimulationRefresh(); }
   }
-  for (const c of circuit.components.filter(item => item.type === "timer3")) {
+  const timedComponents = circuit.components.filter(item => ["timer3", "pressureSequence"].includes(item.type));
+  for (const c of timedComponents) {
     const signal = pressure.has(key(c.id, "X"));
     if (!signal) {
       const wasRunning = runtime.timers[c.id] || (runtime.timerTicks[c.id] || 0) > 0;
@@ -611,6 +630,24 @@ function buildSimulation(advanceTimeStep = false) {
       runtime.timers[c.id] = false;
       runtime.timerTicks[c.id] = 0;
       if (wasRunning) queueSimulationRefresh();
+    } else if (stepMode && !runtime.timers[c.id]) {
+      if (advanceTimeStep) {
+        runtime.timerTicks[c.id] = (runtime.timerTicks[c.id] || 0) + 1;
+        const requiredTicks = ({ short: 1, medium: 2, long: 4 })[c.properties?.delay] || 2;
+        if (runtime.timerTicks[c.id] >= requiredTicks) { runtime.timers[c.id] = true; queueSimulationRefresh(); }
+      }
+    } else if (!stepMode && !runtime.timers[c.id] && !timerHandles.has(c.id)) {
+      const delay = ({ short: 700, medium: 1400, long: 2400 })[c.properties?.delay] || 1400;
+      timerHandles.set(c.id, setTimeout(() => { timerHandles.delete(c.id); if (running) { runtime.timers[c.id] = true; render(); } }, delay));
+    }
+  }
+  for (const c of circuit.components.filter(item => item.type === "electricTimerRelay")) {
+    const signal = !!electrical.energized[c.id];
+    const clearTimer = () => { const handle = timerHandles.get(c.id); if (handle) clearTimeout(handle); timerHandles.delete(c.id); };
+    if (!signal) {
+      const changed = runtime.timers[c.id] || (runtime.timerTicks[c.id] || 0) > 0;
+      clearTimer(); runtime.timers[c.id] = false; runtime.timerTicks[c.id] = 0;
+      if (changed) queueSimulationRefresh();
     } else if (stepMode && !runtime.timers[c.id]) {
       if (advanceTimeStep) {
         runtime.timerTicks[c.id] = (runtime.timerTicks[c.id] || 0) + 1;
@@ -693,13 +730,15 @@ function drawSymbol(group, c, previousCylinderState) {
     svg("line", { x1: 0, y1: 30, x2: 85, y2: 30, class: "norm-port-line" }, group); svg("line", { x1: 0, y1: 70, x2: 85, y2: 70, class: "norm-port-line" }, group);
     svg("line", { x1: 48, y1: 17, x2: 48, y2: 43, class: "symbol" }, group); svg("line", { x1: 38, y1: 30, x2: 58, y2: 30, class: "symbol" }, group); svg("line", { x1: 42, y1: 70, x2: 54, y2: 70, class: "symbol" }, group);
     svgText(group, 93, 34, "+", "sub"); svgText(group, 93, 74, "−", "sub");
-  } else if (["electricPush", "electricPushNC", "electricSwitch", "electricLimit"].includes(c.type)) {
+  } else if (["electricPush", "electricPushNC", "electricSwitch", "electricLimit", "magneticSensor"].includes(c.type)) {
     svg("line", { x1: 0, y1: 50, x2: 55, y2: 50, class: "norm-port-line" }, group); svg("line", { x1: 100, y1: 50, x2: 155, y2: 50, class: "norm-port-line" }, group);
     const momentary = c.type === "electricPush" || c.type === "electricPushNC";
-    const closed = c.type === "electricPush" ? !!runtime.pressed[c.id] : c.type === "electricPushNC" ? !runtime.pressed[c.id] : c.type === "electricSwitch" ? !!runtime.valves[c.id] : !!targetCylinderFor(c) && runtime.cylinders[targetCylinderFor(c).id] === (c.properties?.targetEnd || "extended");
+    const target = targetCylinderFor(c);
+    const closed = c.type === "electricPush" ? !!runtime.pressed[c.id] : c.type === "electricPushNC" ? !runtime.pressed[c.id] : c.type === "electricSwitch" ? !!runtime.valves[c.id] : !!target && runtime.cylinders[target.id] === (c.properties?.targetEnd || "extended");
     svg("circle", { cx: 65, cy: 50, r: 3, class: "symbol-fill" }, group); svg("circle", { cx: 90, cy: 50, r: 3, class: "symbol-fill" }, group);
     svg("line", { x1: 66, y1: 50, x2: closed ? 89 : 80, y2: closed ? 50 : 35, class: "symbol" }, group);
-    if (momentary || c.type === "electricLimit") { svg("line", { x1: 73, y1: 20, x2: 83, y2: 20, class: "symbol" }, group); svg("line", { x1: 78, y1: 20, x2: 78, y2: 32, class: "symbol" }, group); }
+    if (momentary || c.type === "electricLimit" || c.type === "magneticSensor") { svg("line", { x1: 73, y1: 20, x2: 83, y2: 20, class: "symbol" }, group); svg("line", { x1: 78, y1: 20, x2: 78, y2: 32, class: "symbol" }, group); }
+    if (c.type === "magneticSensor") svgText(group, 78, 14, "S", "sub", { "text-anchor": "middle" });
     if (momentary || c.type === "electricSwitch") {
       const button = svg("rect", { x: 55, y: 17, width: 47, height: 44, rx: 4, class: `actuator${closed ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": momentary ? stepMode ? "Clica per activar o desactivar l'ordre elèctrica; prem Avança per continuar" : "Mantén premut el polsador elèctric" : "Commuta l'interruptor elèctric" }, group);
       const trigger = e => { e.stopPropagation(); if (!running) return; if (momentary && stepMode) runtime.pressed[c.id] = !runtime.pressed[c.id]; else if (momentary && activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } else if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; render(); };
@@ -707,6 +746,14 @@ function drawSymbol(group, c, previousCylinderState) {
       button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
       button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); if (!e.repeat) trigger(e); } }); button.addEventListener("keyup", release);
     }
+  } else if (c.type === "electricTimerRelay") {
+    const on = !!runtime.electrical[c.id], done = !!runtime.timers[c.id];
+    svg("path", { d: "M42 16q-13 12 0 24 M76 16q13 12 0 24 M42 16h34 M42 40h34", class: `symbol${on ? " norm-active" : ""}` }, group);
+    svgText(group, 91, 34, "KT", "sub");
+    svg("line", { x1: 0, y1: 100, x2: 50, y2: 100, class: "norm-port-line" }, group); svg("line", { x1: 140, y1: 100, x2: 190, y2: 100, class: "norm-port-line" }, group);
+    svg("circle", { cx: 62, cy: 100, r: 3, class: "symbol-fill" }, group); svg("circle", { cx: 132, cy: 100, r: 3, class: "symbol-fill" }, group);
+    svg("line", { x1: 63, y1: 100, x2: done ? 131 : 116, y2: done ? 100 : 83, class: "symbol" }, group);
+    svgText(group, 98, 64, done ? "15–18 tancat" : on ? "retard en curs" : "15–18 obert", "sub", { "text-anchor": "middle" });
   } else if (["relayCoil", "relayContactNO", "relayContactNC"].includes(c.type)) {
     if (c.type === "relayCoil") { svg("path", { d: "M40 28q-15 22 0 44 M85 28q15 22 0 44 M40 28h45 M40 72h45", class: "symbol" }, group); svgText(group, 100, 55, c.properties?.relay || "K1", "sub"); }
     else { const nc = c.type === "relayContactNC", left = nc ? "21" : "13", right = nc ? "22" : "14", x1 = nc ? 53 : 53; svg("line", { x1: 0, y1: 50, x2: 52, y2: 50, class: "norm-port-line" }, group); svg("line", { x1: 108, y1: 50, x2: 160, y2: 50, class: "norm-port-line" }, group); const on = !!runtime.relays[c.properties?.relay || "K1"], closed = nc ? !on : on; svg("line", { x1, y1: 50, x2: closed ? 107 : 95, y2: closed ? 50 : 35, class: "symbol" }, group); svgText(group, 80, 84, `${c.properties?.relay || "K1"} ${nc ? "NC" : "NO"}`, "sub", { "text-anchor": "middle" }); }
@@ -788,6 +835,13 @@ function drawSymbol(group, c, previousCylinderState) {
     svg("path", { d: "M110 13v13l8-6z M110 102v18 M104 120h12", class: "symbol" }, group);
     svg("line", { x1: 110, y1: 95, x2: 110, y2: 140, class: "norm-port-line" }, group);
     svgText(group, 110, 134, { short: "retard curt", medium: "retard mitjà", long: "retard llarg" }[c.properties?.delay || "medium"], "sub", { "text-anchor": "middle" });
+  } else if (c.type === "pressureSequence") {
+    const active = !!runtime.timers[c.id];
+    svg("line", { x1: 0, y1: 72, x2: 40, y2: 72, class: "norm-port-line" }, group); svg("line", { x1: 210, y1: 72, x2: 250, y2: 72, class: "norm-port-line" }, group);
+    svg("rect", { x: 40, y: 47, width: 60, height: 50, class: `norm-box${active ? " norm-active" : ""}` }, group); svg("rect", { x: 100, y: 47, width: 60, height: 50, class: `norm-box${active ? "" : " norm-active"}` }, group);
+    symbolArrow(group, 55, 88, 65, 57); symbolCap(group, 84, 72); symbolArrow(group, 125, 57, 145, 88); symbolCap(group, 115, 72);
+    svg("line", { x1: 125, y1: 0, x2: 125, y2: 47, class: "norm-port-line" }, group); svg("line", { x1: 125, y1: 97, x2: 125, y2: 145, class: "norm-port-line" }, group); svg("path", { d: "M119 127h12l-6 9z", class: "symbol" }, group);
+    svgText(group, 125, 122, { short: "llindar baix", medium: "llindar mitjà", long: "llindar alt" }[c.properties?.delay || "medium"], "sub", { "text-anchor": "middle" });
   } else if (c.type === "valve53") {
     const state = runtime.valves[c.id] || "center";
     const centerMode = c.properties?.center || "closed";
@@ -816,11 +870,12 @@ function drawSymbol(group, c, previousCylinderState) {
     const opening = c.properties?.opening || "open";
     const label = { closed: "tancat", low: "poc", medium: "mitjà", open: "obert" }[opening] || "obert";
     svgText(group, 110, 108, label, "sub", { "text-anchor": "middle" });
-  } else if (["valve2", "valve3", "valve4", "valve5"].includes(c.type)) {
-    const is2 = c.type === "valve2", is3 = c.type === "valve3", is4 = c.type === "valve4";
+  } else if (["valve2", "valve3", "valve3Pilot", "valve4", "valve5"].includes(c.type)) {
+    const pilotValve = c.type === "valve3Pilot";
+    const is2 = c.type === "valve2", is3 = c.type === "valve3" || pilotValve, is4 = c.type === "valve4";
     const properties = { ...defaultValveProperties(c.type), ...c.properties };
-    const momentary = properties.returnMode === "spring";
-    const active = momentary ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
+    const momentary = pilotValve || properties.returnMode === "spring";
+    const active = pilotValve ? !!runtime.valves[c.id] : momentary ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
     const offset = active ? 60 : 0;
     const left = is2 || is3 ? 40 : 50;
     const leftSelected = is3 && properties.normallyOpen ? !active : active;
@@ -852,13 +907,16 @@ function drawSymbol(group, c, previousCylinderState) {
     // El triangle indica el port d'escapament, independentment del seu estat.
     for (const x of is3 ? [145] : is4 ? [165] : c.type === "valve5" ? [125, 165] : []) svg("path", { d: `M${x - 6} 134h12l-6 9z`, class: "symbol" }, group);
     if (is3) svgText(group, 120, 128, properties.normallyOpen ? "NO" : "NC", "sub", { "text-anchor": "middle" });
-    if (momentary) symbolSpring(group, (is2 || is3 ? 164 : 174) + offset, 72, 27);
+    if (pilotValve) { svg("path", { d: "M2 58l12 14-12 14", class: "symbol" }, group); symbolSpring(group, 205 + offset, 72, 27); }
+    else if (momentary) symbolSpring(group, (is2 || is3 ? 164 : 174) + offset, 72, 27);
     let button;
     const actuator = properties.actuator || DEFAULT_ACTUATOR[c.type];
     const actuatorLabel = actuator === "lever" ? "palanca" : actuator === "pedal" ? "pedal" : "polsador";
     const article = actuator === "lever" ? "la" : "el";
     const ariaLabel = momentary ? stepMode ? `Clica per activar o desactivar ${article} ${actuatorLabel} de la vàlvula ${def.short}; prem Avança per continuar` : `Mantén premut ${article} ${actuatorLabel} de la vàlvula ${def.short}` : `Commuta la vàlvula ${def.short} amb ${article} ${actuatorLabel}`;
-    if (actuator === "lever") {
+    if (pilotValve) {
+      // X is the pneumatic pilot signal; there is no manual control.
+    } else if (actuator === "lever") {
       button = svg("circle", { cx: 15, cy: 54, r: 6, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
       svg("path", { d: `M15 54l15 -18 M29 72H${left + offset}`, class: "symbol" }, group);
     } else if (actuator === "pedal") {
@@ -868,6 +926,7 @@ function drawSymbol(group, c, previousCylinderState) {
       button = svg("rect", { x: 4, y: 56, width: 25, height: 32, rx: 2, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
       svg("path", { d: `M29 72H${left + offset} M10 50h13 M16 50v6`, class: "symbol" }, group);
     }
+    if (!button) return;
     const trigger = e => { e.stopPropagation(); if (!running) return; if (!momentary) { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else if (stepMode) { runtime.pressed[c.id] = !runtime.pressed[c.id]; render(); } else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
     const release = e => { e.stopPropagation(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger);
@@ -984,8 +1043,8 @@ function renderInspector() {
     addSelect("limitCylinder", "Cilindre supervisat", [["", "Primer cilindre"], ...cylinders.map((item, index) => [item.id, `Cilindre ${index + 1}`])], currentTarget, value => edit(() => { c.properties.targetCylinder = value; }));
     addSelect("limitEnd", "Extrem d'accionament", [["extended", "Estès"], ["retracted", "Retret"]], c.properties.targetEnd || "extended", value => edit(() => { c.properties.targetEnd = value; }));
   }
-  if (!running && c.type === "timer3") addSelect("timerDelay", "Retard qualitatiu", [["short", "Curt"], ["medium", "Mitjà"], ["long", "Llarg"]], c.properties.delay || "medium", value => edit(() => { c.properties.delay = value; }));
-  if (!running && c.type === "electricLimit") {
+  if (!running && ["timer3", "pressureSequence", "electricTimerRelay"].includes(c.type)) addSelect("timerDelay", c.type === "pressureSequence" ? "Llindar qualitatiu (abstracte)" : "Retard qualitatiu", [["short", c.type === "pressureSequence" ? "Baix" : "Curt"], ["medium", "Mitjà"], ["long", c.type === "pressureSequence" ? "Alt" : "Llarg"]], c.properties.delay || "medium", value => edit(() => { c.properties.delay = value; }));
+  if (!running && ["electricLimit", "magneticSensor"].includes(c.type)) {
     const cylinders = circuit.components.filter(isCylinder);
     addSelect("electricLimitCylinder", "Cilindre supervisat", [["", "Primer cilindre"], ...cylinders.map((item, index) => [item.id, `Cilindre ${index + 1}`])], c.properties.targetCylinder || "", value => edit(() => { c.properties.targetCylinder = value; }));
     addSelect("electricLimitEnd", "Extrem d'accionament", [["extended", "Estès"], ["retracted", "Retret"]], c.properties.targetEnd || "extended", value => edit(() => { c.properties.targetEnd = value; }));
@@ -999,7 +1058,9 @@ function renderInspector() {
     }
   }
   if (running && c.type === "limitValve3") { const target = targetCylinderFor(c); const p = document.createElement("p"); p.textContent = `Final mecànic ${target && runtime.cylinders[target.id] === (c.properties.targetEnd || "extended") ? "accionat" : "en repòs"}.`; panel.append(p); }
-  if (running && c.type === "timer3") { const p = document.createElement("p"); const needed = ({ short: 1, medium: 2, long: 4 })[c.properties?.delay] || 2; p.textContent = runtime.timers[c.id] ? "Retard completat; sortida activa." : stepMode ? `Pasos de retard: ${runtime.timerTicks[c.id] || 0}/${needed}.` : timerHandles.has(c.id) ? "Retard en curs." : "En espera de senyal a X."; panel.append(p); }
+  if (running && c.type === "valve3Pilot") { const p = document.createElement("p"); p.textContent = runtime.valves[c.id] ? "Pilot X actiu; connexió P–A." : "Sense senyal de pilotatge; connexió A–R."; panel.append(p); }
+  if (running && c.type === "magneticSensor") { const target = targetCylinderFor(c); const p = document.createElement("p"); p.textContent = target && runtime.cylinders[target.id] === (c.properties.targetEnd || "extended") ? "Sensor activat: contacte 1–2 tancat." : "Sensor en repòs: contacte 1–2 obert."; panel.append(p); }
+  if (running && ["timer3", "pressureSequence", "electricTimerRelay"].includes(c.type)) { const p = document.createElement("p"); const needed = ({ short: 1, medium: 2, long: 4 })[c.properties?.delay] || 2; p.textContent = runtime.timers[c.id] ? "Retard completat; contacte/sortida activat." : stepMode ? `Passos qualitatius: ${runtime.timerTicks[c.id] || 0}/${needed}.` : timerHandles.has(c.id) ? "Retard qualitatiu en curs." : c.type === "electricTimerRelay" ? "En espera d'alimentació a A1–A2." : "En espera de senyal a X."; panel.append(p); }
   if (running && c.type === "valve5Pilot") { const p = document.createElement("p"); p.textContent = `Posició ${runtime.valves[c.id] ? "P–A / B–S" : "P–B / A–R"}. X commuta cap a A; Y commuta cap a B.`; panel.append(p); }
   if (running && c.type === "valve5Electric") { const p = document.createElement("p"); p.textContent = runtime.electrical[c.id] ? "Bobina energitzada; posició P–A / B–S." : "Bobina desenergitzada; retorn per molla a P–B / A–R."; panel.append(p); }
   if (running && c.type === "valve5ElectricBistable") { const p = document.createElement("p"); p.textContent = runtime.electrical[`${c.id}:A`] && runtime.electrical[`${c.id}:B`] ? "Avís: Y1 i Y2 estan activades alhora; es manté l'estat anterior." : runtime.valves[c.id] ? "Bobina Y1 activada; posició P–A / B–S. Manté la posició en deixar anar el comandament." : "Posició P–B / A–R. S'hi manté fins que s'activa Y1."; panel.append(p); }
@@ -1066,7 +1127,7 @@ function render() {
 }
 function loadExample(kind) {
   if (dirty && !confirm("Hi ha canvis no descarregats. Vols obrir un exemple?")) return;
-  if (["threeTwoNO", "quickExhaust", "electricBistable"].includes(kind)) {
+  if (["threeTwoNO", "quickExhaust", "electricBistable", "pilot3", "pressureSequence", "magneticSensor", "electricTimer"].includes(kind)) {
     let components, connections, name, message;
     if (kind === "threeTwoNO") {
       components = [
@@ -1092,7 +1153,7 @@ function loadExample(kind) {
         { id: "cilindre", from: { componentId: "escapament", portId: "A" }, to: { componentId: "cilindre", portId: "A" } }
       ];
       name = "Exemple: vàlvula d'escapament ràpid"; message = "En deixar anar la 3/2, l'aire del cilindre surt pel port R de l'escapament ràpid.";
-    } else {
+    } else if (kind === "electricBistable") {
       components = [
         { id: "font_aire", type: "source", x: 45, y: 440, properties: {} },
         { id: "electrica", type: "electricSource", x: 40, y: 105, properties: {} },
@@ -1114,6 +1175,64 @@ function loadExample(kind) {
         { id: "comu", from: { componentId: "valvula", portId: "common" }, to: { componentId: "electrica", portId: "minus" } }
       ];
       name = "Exemple: electrovàlvula 5/2 biestable"; message = "Polsa Y1 o Y2 per canviar la 5/2. La vàlvula manté l'última posició quan deixes anar el polsador.";
+    } else if (kind === "pilot3" || kind === "pressureSequence") {
+      const sequenced = kind === "pressureSequence";
+      components = [
+        { id: "font", type: "source", x: 60, y: 305, properties: {} },
+        { id: "derivacio", type: "tee", x: 240, y: 315, properties: {} },
+        { id: "ordre", type: "valve3", x: 430, y: 465, properties: defaultValveProperties("valve3") },
+        { id: "valvula", type: sequenced ? "pressureSequence" : "valve3Pilot", x: 470, y: 260, properties: sequenced ? { delay: "medium" } : {} },
+        { id: "cilindre", type: "single", x: 850, y: 285, properties: {} }
+      ];
+      connections = [
+        { id: "font_derivacio", from: { componentId: "font", portId: "P" }, to: { componentId: "derivacio", portId: "A" } },
+        { id: "alimentacio", from: { componentId: "derivacio", portId: "B" }, to: { componentId: "valvula", portId: "P" } },
+        { id: "ordre_p", from: { componentId: "derivacio", portId: "C" }, to: { componentId: "ordre", portId: "P" } },
+        { id: "ordre_x", from: { componentId: "ordre", portId: "A" }, to: { componentId: "valvula", portId: "X" } },
+        { id: "sortida", from: { componentId: "valvula", portId: "A" }, to: { componentId: "cilindre", portId: "A" } }
+      ];
+      name = sequenced ? "Exemple: vàlvula seqüencial de pressió" : "Exemple: vàlvula 3/2 pilotada";
+      message = sequenced ? "Acciona l'ordre manual: X inicia un llindar qualitatiu i, després, la vàlvula alimenta el cilindre. No representa bar reals." : "Acciona la 3/2 manual: el senyal a X commuta la vàlvula pilotada i mou el cilindre.";
+    } else if (kind === "magneticSensor") {
+      components = [
+        { id: "font_aire", type: "source", x: 35, y: 330, properties: {} },
+        { id: "aire", type: "valve3", x: 295, y: 310, properties: defaultValveProperties("valve3") },
+        { id: "cilindre", type: "single", x: 650, y: 300, properties: {} },
+        { id: "font_el", type: "electricSource", x: 45, y: 95, properties: {} },
+        { id: "sensor", type: "magneticSensor", x: 330, y: 110, properties: { targetCylinder: "cilindre", targetEnd: "extended" } },
+        { id: "rele", type: "relayCoil", x: 640, y: 105, properties: { relay: "K1" } }
+      ];
+      connections = [
+        { id: "aire_p", from: { componentId: "font_aire", portId: "P" }, to: { componentId: "aire", portId: "P" } },
+        { id: "aire_a", from: { componentId: "aire", portId: "A" }, to: { componentId: "cilindre", portId: "A" } },
+        { id: "el_plus", from: { componentId: "font_el", portId: "plus" }, to: { componentId: "sensor", portId: "1" } },
+        { id: "sensor_rele", from: { componentId: "sensor", portId: "2" }, to: { componentId: "rele", portId: "A1" } },
+        { id: "rele_retor", from: { componentId: "rele", portId: "A2" }, to: { componentId: "font_el", portId: "minus" } }
+      ];
+      name = "Exemple: sensor magnètic i relé"; message = "Acciona la 3/2 pneumàtica. Quan el cilindre arriba a l'extrem, el sensor tanca el circuit i activa K1.";
+    } else {
+      components = [
+        { id: "font_aire", type: "source", x: 35, y: 420, properties: {} },
+        { id: "electrovalvula", type: "valve5Electric", x: 685, y: 365, properties: {} },
+        { id: "cilindre", type: "double", x: 1000, y: 370, properties: {} },
+        { id: "font_el", type: "electricSource", x: 35, y: 100, properties: {} },
+        { id: "derivacio", type: "electricJunction", x: 250, y: 125, properties: {} },
+        { id: "ordre", type: "electricPush", x: 435, y: 60, properties: {} },
+        { id: "temporitzador", type: "electricTimerRelay", x: 450, y: 200, properties: { delay: "medium" } }
+      ];
+      connections = [
+        { id: "aire_p", from: { componentId: "font_aire", portId: "P" }, to: { componentId: "electrovalvula", portId: "P" } },
+        { id: "aire_a", from: { componentId: "electrovalvula", portId: "A" }, to: { componentId: "cilindre", portId: "A" } },
+        { id: "aire_b", from: { componentId: "electrovalvula", portId: "B" }, to: { componentId: "cilindre", portId: "B" } },
+        { id: "plus", from: { componentId: "font_el", portId: "plus" }, to: { componentId: "derivacio", portId: "A" } },
+        { id: "al_polsador", from: { componentId: "derivacio", portId: "B" }, to: { componentId: "ordre", portId: "1" } },
+        { id: "ordre_timer", from: { componentId: "ordre", portId: "2" }, to: { componentId: "temporitzador", portId: "A1" } },
+        { id: "retorn_timer", from: { componentId: "temporitzador", portId: "A2" }, to: { componentId: "font_el", portId: "minus" } },
+        { id: "feed_contact", from: { componentId: "derivacio", portId: "C" }, to: { componentId: "temporitzador", portId: "15" } },
+        { id: "sortida_timer", from: { componentId: "temporitzador", portId: "18" }, to: { componentId: "electrovalvula", portId: "X1" } },
+        { id: "retorn_bobina", from: { componentId: "electrovalvula", portId: "X2" }, to: { componentId: "font_el", portId: "minus" } }
+      ];
+      name = "Exemple: relé temporitzador i electrovàlvula"; message = "Mantén premut el polsador: el relé tanca 15–18 després del retard qualitatiu i activa l'electrovàlvula.";
     }
     circuit = { format: FORMAT, version: VERSION, metadata: { name }, components, connections, view: { zoom: .82, pan: { x: 35, y: 10 } } };
     selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render(); status(message); return;
@@ -1368,6 +1487,10 @@ function setupControls() {
   $("exampleElectricBtn").addEventListener("click", () => loadExample("electric"));
   $("exampleQuickExhaustBtn").addEventListener("click", () => loadExample("quickExhaust"));
   $("exampleElectricBistableBtn").addEventListener("click", () => loadExample("electricBistable"));
+  $("examplePilot3Btn")?.addEventListener("click", () => loadExample("pilot3"));
+  $("examplePressureSequenceBtn")?.addEventListener("click", () => loadExample("pressureSequence"));
+  $("exampleMagneticSensorBtn")?.addEventListener("click", () => loadExample("magneticSensor"));
+  $("exampleElectricTimerBtn")?.addEventListener("click", () => loadExample("electricTimer"));
   $("newBtn").addEventListener("click", newCircuit);
   $("openBtn").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", e => { openCircuit(e.target.files[0]); e.target.value = ""; });
