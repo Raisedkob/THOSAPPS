@@ -30,7 +30,7 @@
           <p class="text-xs text-blue-100">Visor Solucionari i Simulador d'Exàmens</p>
         </div>
       </div>
-      <div class="flex items-center gap-2 bg-blue-900/40 p-1.5 rounded-xl border border-white/20">
+      <div id="xml-mode-buttons" class="hidden items-center gap-2 bg-blue-900/40 p-1.5 rounded-xl border border-white/20">
         <button id="btn-simulador" onclick="setMode('simulador')" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-400 text-slate-900 shadow transition flex items-center gap-1.5">
           <i class="fa-solid fa-gamepad"></i> Mode Simulador
         </button>
@@ -38,10 +38,28 @@
           <i class="fa-solid fa-book-open"></i> Mode Docent (Solucionari)
         </button>
       </div>
+      <button id="btn-home" onclick="returnHome()" class="hidden px-3 py-2 text-xs font-bold rounded-lg bg-blue-900/40 text-white border border-white/20 hover:bg-blue-900/70"><i class="fa-solid fa-house mr-1"></i> Inici</button>
     </div>
   </header>
 
   <main class="max-w-6xl mx-auto px-4 mt-6">
+
+    <section id="home-view" class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8" aria-label="Eines THOSXML">
+      <button type="button" onclick="openTool('xml')" class="text-left bg-white border border-slate-200 rounded-2xl p-7 shadow-sm hover:shadow-md hover:border-blue-400 transition">
+        <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-700 text-xl"><i class="fa-solid fa-file-code"></i></span>
+        <span class="mt-4 block text-xl font-bold text-slate-800">Visualitzar el XML</span>
+        <span class="mt-2 block text-sm text-slate-600">Carrega un qüestionari Moodle XML per previsualitzar-lo o simular-ne les preguntes.</span>
+        <span class="mt-5 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Obrir visor</span>
+      </button>
+      <button type="button" onclick="openTool('converter')" class="text-left bg-white border border-slate-200 rounded-2xl p-7 shadow-sm hover:shadow-md hover:border-emerald-400 transition">
+        <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 text-xl"><i class="fa-solid fa-arrows-rotate"></i></span>
+        <span class="mt-4 block text-xl font-bold text-slate-800">Convertir HTML a XML</span>
+        <span class="mt-2 block text-sm text-slate-600">Converteix un qüestionari HTML, visualitza les preguntes a THOSXML i descarrega l’XML.</span>
+        <span class="mt-5 inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">Obrir convertidor</span>
+      </button>
+    </section>
+
+    <div id="xml-tools" class="hidden">
 
     <!-- Zona de càrrega de fitxer -->
     <div id="upload-zone" class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-500 transition cursor-pointer shadow-sm relative">
@@ -76,6 +94,11 @@
         </select>
         <span id="q-counter" class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-semibold border border-slate-200">0 preguntes</span>
       </div>
+    </div>
+
+    <div id="converted-download-bar" class="hidden mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-emerald-950">
+      <p class="text-sm font-medium">Aquest qüestionari s’ha convertit des d’HTML.</p>
+      <button id="download-converted-current" type="button" class="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Descarregar XML</button>
     </div>
 
     <!-- Marcador del Mode Simulador -->
@@ -127,6 +150,22 @@
     <!-- Llista de Preguntes -->
     <div id="questions-container" class="mt-6 space-y-6"></div>
 
+    </div>
+
+    <section id="html-converter" class="hidden mt-6">
+      <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        <h2 class="text-xl font-bold text-slate-800">Convertir un qüestionari HTML a Moodle XML</h2>
+        <p class="text-sm text-slate-600 mt-2">Eina local: el fitxer es processa en aquest navegador. Admet qüestionaris amb una matriu JavaScript <code>questionsData</code> o <code>quizData</code> i opcions d’una sola resposta correcta.</p>
+        <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4"><strong>Prevalidació:</strong> revisa el fitxer XML generat i importa’l al Moodle real abans de fer-lo servir.</p>
+        <label for="html-input" class="mt-5 block rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center cursor-pointer hover:border-blue-500">
+          <span class="block font-semibold text-slate-700">Tria o deixa anar fitxers HTML</span>
+          <span class="block text-sm text-slate-500 mt-1">S’admeten extensions .html i .htm</span>
+        </label>
+        <input type="file" id="html-input" accept=".html,.htm,text/html" multiple class="sr-only">
+        <div id="html-results" class="mt-5 space-y-3" aria-live="polite"></div>
+      </div>
+    </section>
+
   </main>
 
   <script>
@@ -134,6 +173,8 @@
     let rawQuestions = [];
     let xmlValidation = { errors: [], questionCount: 0 };
     let userAnswers = {};
+    let convertedXmlText = '';
+    let convertedXmlFilename = '';
 
     function setMode(mode) {
       currentMode = mode;
@@ -141,19 +182,39 @@
       const btnSimulador = document.getElementById('btn-simulador');
       const scorebar = document.getElementById('sim-scorebar');
       const docentBanner = document.getElementById('docent-banner');
-
-      if (mode === 'docent') {
-        btnDocent.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-white text-slate-900 shadow transition flex items-center gap-1.5";
-        btnSimulador.className = "px-3 py-1.5 text-xs font-bold rounded-lg text-white hover:bg-white/10 transition flex items-center gap-1.5";
-        scorebar.classList.add('hidden');
-        docentBanner.classList.remove('hidden');
-      } else {
-        btnSimulador.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-400 text-slate-900 shadow transition flex items-center gap-1.5";
-        btnDocent.className = "px-3 py-1.5 text-xs font-bold rounded-lg text-white hover:bg-white/10 transition flex items-center gap-1.5";
-        scorebar.classList.remove('hidden');
-        docentBanner.classList.add('hidden');
-      }
+      const docent = mode === 'docent';
+      btnSimulador.className = `px-3 py-1.5 text-xs font-bold rounded-lg ${!docent ? 'bg-amber-400 text-slate-900 shadow' : 'text-white hover:bg-white/10'} transition flex items-center gap-1.5`;
+      btnDocent.className = `px-3 py-1.5 text-xs font-bold rounded-lg ${docent ? 'bg-white text-slate-900 shadow' : 'text-white hover:bg-white/10'} transition flex items-center gap-1.5`;
+      scorebar.classList.toggle('hidden', docent);
+      docentBanner.classList.toggle('hidden', !docent);
       renderQuestions();
+    }
+
+    function openTool(tool) {
+      document.getElementById('home-view').classList.add('hidden');
+      document.getElementById('btn-home').classList.remove('hidden');
+      const xmlModeButtons = document.getElementById('xml-mode-buttons');
+      if (tool === 'xml') {
+        document.getElementById('html-converter').classList.add('hidden');
+        document.getElementById('xml-tools').classList.remove('hidden');
+        xmlModeButtons.classList.remove('hidden');
+        xmlModeButtons.classList.add('flex');
+        setMode('simulador');
+      } else {
+        document.getElementById('xml-tools').classList.add('hidden');
+        document.getElementById('html-converter').classList.remove('hidden');
+        xmlModeButtons.classList.add('hidden');
+        xmlModeButtons.classList.remove('flex');
+      }
+    }
+
+    function returnHome() {
+      document.getElementById('home-view').classList.remove('hidden');
+      document.getElementById('xml-tools').classList.add('hidden');
+      document.getElementById('html-converter').classList.add('hidden');
+      document.getElementById('xml-mode-buttons').classList.add('hidden');
+      document.getElementById('xml-mode-buttons').classList.remove('flex');
+      document.getElementById('btn-home').classList.add('hidden');
     }
 
     function resetSimulator() {
@@ -164,6 +225,7 @@
     function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
+      document.getElementById('converted-download-bar').classList.add('hidden');
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -365,6 +427,219 @@
       document.getElementById('app-controls').classList.remove('hidden');
       renderValidationSummary();
       setMode('simulador');
+    }
+
+    const htmlInput = document.getElementById('html-input');
+    const htmlResults = document.getElementById('html-results');
+    htmlInput.addEventListener('change', event => convertHtmlFiles(event.target.files));
+    const htmlDrop = document.querySelector('#html-converter label[for="html-input"]');
+    htmlDrop.addEventListener('dragover', event => { event.preventDefault(); htmlDrop.classList.add('border-blue-500', 'bg-blue-50'); });
+    htmlDrop.addEventListener('dragleave', () => htmlDrop.classList.remove('border-blue-500', 'bg-blue-50'));
+    htmlDrop.addEventListener('drop', event => {
+      event.preventDefault();
+      htmlDrop.classList.remove('border-blue-500', 'bg-blue-50');
+      convertHtmlFiles(event.dataTransfer.files);
+    });
+
+    function convertHtmlFiles(files) {
+      htmlResults.replaceChildren();
+      Array.from(files || []).forEach(file => {
+        const card = document.createElement('article');
+        card.className = 'rounded-lg border border-slate-200 bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3';
+        const info = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = file.name;
+        const status = document.createElement('p');
+        status.className = 'text-sm text-slate-600 mt-1';
+        info.append(title, status);
+        card.append(info);
+        htmlResults.append(card);
+        if (!/\.html?$/i.test(file.name)) {
+          card.classList.add('border-red-300', 'bg-red-50');
+          status.textContent = 'Format no admès. Selecciona un fitxer .html o .htm.';
+          return;
+        }
+        file.arrayBuffer().then(buffer => {
+          const text = decodeHtmlFile(buffer);
+          const xml = convertHtmlQuizToXml(text);
+          const fileName = `${file.name.replace(/\.html?$/i, '')}.xml`;
+          const download = document.createElement('button');
+          download.type = 'button';
+          download.className = 'px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold';
+          download.textContent = 'Descarregar XML';
+          download.addEventListener('click', () => downloadXml(fileName, xml));
+          const preview = document.createElement('button');
+          preview.type = 'button';
+          preview.className = 'px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold';
+          preview.textContent = 'Visualitzar preguntes';
+          preview.addEventListener('click', () => {
+            convertedXmlText = xml;
+            convertedXmlFilename = fileName;
+            document.getElementById('download-converted-current').onclick = () => downloadXml(convertedXmlFilename, convertedXmlText);
+            openTool('xml');
+            document.getElementById('converted-download-bar').classList.remove('hidden');
+            parseXMLContent(xml);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+          status.textContent = `${xml.match(/<question type="multichoice">/g)?.length || 0} preguntes convertides. Revisa el fitxer abans d’importar-lo a Moodle.`;
+          const actions = document.createElement('div');
+          actions.className = 'flex flex-wrap gap-2';
+          actions.append(preview, download);
+          card.append(actions);
+        }).catch(error => {
+          card.classList.add('border-red-300', 'bg-red-50');
+          status.textContent = error.message || 'No s’ha pogut convertir el fitxer.';
+        });
+      });
+      htmlInput.value = '';
+    }
+
+    function decodeHtmlFile(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let encoding = 'utf-8';
+      if (bytes[0] === 0xFF && bytes[1] === 0xFE) encoding = 'utf-16le';
+      else if (bytes[0] === 0xFE && bytes[1] === 0xFF) encoding = 'utf-16be';
+      else {
+        const prefix = new TextDecoder('ascii').decode(bytes.slice(0, Math.min(bytes.length, 4096)));
+        const declared = prefix.match(/<meta\b[^>]*charset\s*=\s*["']?\s*([\w.-]+)/i)?.[1];
+        if (declared && /^windows-1252|iso-8859-1$/i.test(declared)) encoding = 'windows-1252';
+        else if (declared && /^utf-16le$/i.test(declared)) encoding = 'utf-16le';
+        else if (declared && /^utf-16be$/i.test(declared)) encoding = 'utf-16be';
+      }
+      return new TextDecoder(encoding, { fatal: true }).decode(bytes);
+    }
+
+    function convertHtmlQuizToXml(htmlText) {
+      const arrayCode = extractJsArray(htmlText);
+      if (!arrayCode) throw new Error('No s’ha trobat una matriu questionsData o quizData.');
+      const questions = parseJsLiteralArray(arrayCode);
+      if (!Array.isArray(questions) || !questions.length) throw new Error('La matriu no conté cap pregunta.');
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<quiz>\n';
+      questions.forEach((q, index) => {
+        if (!q || typeof q !== 'object' || Array.isArray(q)) throw new Error(`La pregunta ${index + 1} no té un format vàlid.`);
+        const questionText = q.q ?? q.question ?? q.title ?? '';
+        if (typeof questionText !== 'string' || !questionText.trim()) throw new Error(`La pregunta ${q.id ?? index + 1} no té enunciat (q, question o title).`);
+        if (!Array.isArray(q.options) || q.options.length < 2 || q.options.some(option => typeof option !== 'string' || !option.trim())) throw new Error(`La pregunta ${q.id ?? index + 1} necessita almenys dues opcions de text.`);
+        if (!Number.isInteger(q.correct) || q.correct < 0 || q.correct >= q.options.length) throw new Error(`La pregunta ${q.id ?? index + 1} no té un índex de resposta correcta vàlid.`);
+        const qName = `Pregunta ${q.id ?? index + 1}`;
+        const prompt = `${q.svg ? `<div style="margin-bottom:15px">${q.svg}</div>` : ''}${questionText}`;
+        const options = normalizeOptionLabels(q.options);
+        xml += `  <question type="multichoice">\n    <name><text>${xmlEscape(qName)}</text></name>\n`;
+        xml += `    <questiontext format="html"><text>${xmlCdata(prompt)}</text></questiontext>\n`;
+        const feedback = q.exp ?? q.explanation ?? '';
+        if (feedback) xml += `    <generalfeedback format="html"><text>${xmlCdata(feedback)}</text></generalfeedback>\n`;
+        xml += '    <defaultgrade>1.0000000</defaultgrade>\n    <penalty>0.3333333</penalty>\n    <hidden>0</hidden>\n    <single>true</single>\n    <shuffleanswers>true</shuffleanswers>\n    <answernumbering>abc</answernumbering>\n';
+        options.forEach((option, optionIndex) => {
+          xml += `    <answer fraction="${optionIndex === q.correct ? '100' : '0'}" format="html"><text>${xmlCdata(option)}</text><feedback format="html"><text></text></feedback></answer>\n`;
+        });
+        xml += '  </question>\n';
+      });
+      return `${xml}</quiz>`;
+    }
+
+    function extractJsArray(htmlText) {
+      const match = htmlText.match(/(?:const|let|var)\s+(questionsData|quizData)\s*=\s*\[/);
+      if (!match) return null;
+      const start = match.index + match[0].length - 1;
+      let depth = 0, quote = '', comment = '';
+      for (let i = start; i < htmlText.length; i++) {
+        const c = htmlText[i], next = htmlText[i + 1] || '';
+        if (comment === '//') { if (c === '\n') comment = ''; continue; }
+        if (comment === '/*') { if (c === '*' && next === '/') { comment = ''; i++; } continue; }
+        if (quote) {
+          if (c === '\\') { i++; continue; }
+          if (c === quote) quote = '';
+          continue;
+        }
+        if (c === '/' && next === '/') { comment = '//'; i++; continue; }
+        if (c === '/' && next === '*') { comment = '/*'; i++; continue; }
+        if (c === '"' || c === "'" || c === '`') { quote = c; continue; }
+        if (c === '[') depth++;
+        if (c === ']' && --depth === 0) return htmlText.slice(start, i + 1);
+      }
+      return null;
+    }
+
+    function parseJsLiteralArray(source) {
+      let i = 0;
+      const fail = () => { throw new Error('La matriu ha de contenir només dades literals (text, nombres, objectes i llistes), sense codi executable.'); };
+      function skip() {
+        while (i < source.length) {
+          if (/\s/.test(source[i])) { i++; continue; }
+          if (source[i] === '/' && source[i + 1] === '/') { i += 2; while (i < source.length && source[i] !== '\n') i++; continue; }
+          if (source[i] === '/' && source[i + 1] === '*') { i += 2; const end = source.indexOf('*/', i); if (end < 0) fail(); i = end + 2; continue; }
+          break;
+        }
+      }
+      function string() {
+        const quote = source[i++]; let value = '';
+        while (i < source.length) {
+          const c = source[i++];
+          if (c === quote) return value;
+          if (quote === '`' && c === '$' && source[i] === '{') fail();
+          if (quote !== '`' && (c === '\n' || c === '\r')) fail();
+          if (c !== '\\') { value += c; continue; }
+          if (i >= source.length) fail();
+          const e = source[i++];
+          const escapes = { n:'\n', r:'\r', t:'\t', b:'\b', f:'\f', v:'\v', '0':'\0', '\\':'\\', "'":"'", '"':'"', '`':'`' };
+          if (e in escapes) { value += escapes[e]; continue; }
+          if (e === '\n') continue;
+          if (e === '\r') { if (source[i] === '\n') i++; continue; }
+          if (e === 'x') { const h = source.slice(i, i + 2); if (!/^[\da-f]{2}$/i.test(h)) fail(); value += String.fromCharCode(parseInt(h,16)); i += 2; continue; }
+          if (e === 'u') {
+            if (source[i] === '{') { const end = source.indexOf('}', i + 1); if (end < 0) fail(); const h = source.slice(i + 1, end); if (!/^[\da-f]{1,6}$/i.test(h) || parseInt(h,16) > 0x10ffff) fail(); value += String.fromCodePoint(parseInt(h,16)); i = end + 1; }
+            else { const h = source.slice(i, i + 4); if (!/^[\da-f]{4}$/i.test(h)) fail(); value += String.fromCharCode(parseInt(h,16)); i += 4; }
+            continue;
+          }
+          value += e;
+        }
+        fail();
+      }
+      function value() {
+        skip(); const c = source[i];
+        if (c === '[') {
+          i++; const result = []; skip(); if (source[i] === ']') { i++; return result; }
+          while (i < source.length) { result.push(value()); skip(); if (source[i] === ']') { i++; return result; } if (source[i++] !== ',') fail(); skip(); if (source[i] === ']') { i++; return result; } }
+          fail();
+        }
+        if (c === '{') {
+          i++; const result = Object.create(null); skip(); if (source[i] === '}') { i++; return result; }
+          while (i < source.length) { skip(); let key; if (source[i] === '"' || source[i] === "'") key = string(); else { const m = source.slice(i).match(/^[A-Za-z_$][\w$]*/); if (!m) fail(); key = m[0]; i += key.length; }
+            if (key === '__proto__' || key === 'constructor' || key === 'prototype') fail(); skip(); if (source[i++] !== ':') fail(); result[key] = value(); skip(); if (source[i] === '}') { i++; return result; } if (source[i++] !== ',') fail(); skip(); if (source[i] === '}') { i++; return result; }
+          }
+          fail();
+        }
+        if (c === '"' || c === "'" || c === '`') return string();
+        const number = source.slice(i).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/);
+        if (number) { i += number[0].length; const n = Number(number[0]); if (!Number.isFinite(n)) fail(); return n; }
+        const literal = source.slice(i).match(/^(true|false|null|undefined)\b/);
+        if (literal) { i += literal[0].length; return literal[0] === 'true' ? true : literal[0] === 'false' ? false : null; }
+        fail();
+      }
+      const result = value(); skip(); if (i !== source.length || !Array.isArray(result)) fail(); return result;
+    }
+
+    function normalizeOptionLabels(options) {
+      const pattern = /^\s*([A-Z])[).:\-]\s*/i;
+      const matches = options.map(option => String(option).match(pattern));
+      const sequential = matches.every((match, index) => match && match[1].toUpperCase().charCodeAt(0) === 65 + index);
+      return sequential ? options.map(option => String(option).replace(pattern, '')) : options;
+    }
+
+    function xmlEscape(value) {
+      return String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;' })[char]);
+    }
+
+    function xmlCdata(value) {
+      const text = String(value);
+      for (const char of text) { const cp = char.codePointAt(0); if (!(cp === 9 || cp === 10 || cp === 13 || (cp >= 0x20 && cp <= 0xD7FF) || (cp >= 0xE000 && cp <= 0xFFFD) || (cp >= 0x10000 && cp <= 0x10FFFF))) throw new Error('El contingut inclou un caràcter que XML no admet.'); }
+      return `<![CDATA[${text.replace(/]]>/g, ']]]]><![CDATA[>')}]]>`;
+    }
+
+    function downloadXml(filename, content) {
+      const url = URL.createObjectURL(new Blob([content], { type: 'application/xml;charset=utf-8' }));
+      const link = document.createElement('a'); link.href = url; link.download = filename; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function processImages(htmlContent, contextNode) {
@@ -830,4 +1105,5 @@
   </script>
 </body>
 </html>
+
 
