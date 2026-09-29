@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THOSFLUID — Simulador pneumàtic</title>
-  <link rel="stylesheet" href="thosfluid/app.css?v=20260929-editor-cachefix-5">
-  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-editor-cachefix-5">
-  <script src="thosfluid/app.js?v=20260929-editor-cachefix-5" defer></script>
+  <link rel="stylesheet" href="thosfluid/app.css?v=20260929-editor-cachefix-6">
+  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-editor-cachefix-6">
+  <script src="thosfluid/app.js?v=20260929-editor-cachefix-6" defer></script>
 </head>
 <body>
   <div class="app">
@@ -14,37 +14,38 @@
       <div class="brand"><span class="brand-icon" aria-hidden="true">◈</span><span><strong>THOS</strong>FLUID</span><small>pneumàtica</small></div>
       <div class="toolbar-scroll">
         <div class="toolgroup" aria-label="Fitxer">
-          <button id="newBtn" title="Circuit nou">Nou</button>
-          <button id="openBtn" title="Obre un fitxer JSON del dispositiu">Obre</button>
-          <button id="saveBtn" title="Descarrega el circuit en un fitxer JSON">Desa</button>
-          <button id="circuitOptionsBtn" aria-expanded="false" aria-controls="circuitOptions">Circuit</button>
+          <button id="newBtn" title="Circuit nou" aria-label="Circuit nou">＋</button>
+          <button id="openBtn" title="Obre un fitxer JSON del dispositiu" aria-label="Obre un fitxer JSON del dispositiu">↥</button>
+          <button id="saveBtn" title="Descarrega el circuit en un fitxer JSON" aria-label="Descarrega el circuit en un fitxer JSON">⬇</button>
+          <button id="exportPngBtn" title="Descarrega una imatge PNG del llenç" aria-label="Descarrega una imatge PNG del llenç">▧</button>
+          <button id="circuitOptionsBtn" title="Opcions del circuit" aria-label="Opcions del circuit" aria-expanded="false" aria-controls="circuitOptions">⚙</button>
           <input id="fileInput" type="file" accept=".json,application/json" hidden>
         </div>
         <div class="toolgroup" aria-label="Edició">
-          <button id="panBtn" aria-pressed="false" title="PAN: moure la vista del llenç">PAN</button>
-          <button id="textBtn" title="Afegeix una anotació de text">Text</button>
-          <button id="copyBtn" title="Copia el component seleccionat" disabled>Copia</button>
-          <button id="pasteBtn" title="Enganxa una còpia del component" disabled>Enganxa</button>
-          <button id="undoBtn" title="Desfés (Ctrl+Z)">↶ <span>Desfés</span></button>
-          <button id="redoBtn" title="Refés (Ctrl+Y)">↷ <span>Refés</span></button>
-          <button id="deleteBtn" title="Esborra la selecció (Supr)">Esborra</button>
+          <button id="clickToolBtn" aria-label="Clic: selecciona, mou o connecta components" aria-pressed="true" title="Clic: selecciona, mou o connecta components">⌖</button>
+          <button id="panBtn" aria-label="PAN: mou la vista del llenç" aria-pressed="false" title="PAN: mou la vista del llenç">✥</button>
+          <button id="textBtn" aria-label="Afegeix una anotació de text" title="Afegeix una anotació de text">T</button>
+          <button id="copyBtn" aria-label="Copia el component seleccionat" title="Copia el component seleccionat" disabled>⧉</button>
+          <button id="pasteBtn" aria-label="Enganxa una còpia del component" title="Enganxa una còpia del component" disabled>▣</button>
+          <button id="undoBtn" aria-label="Desfés (Ctrl+Z)" title="Desfés (Ctrl+Z)">↶</button>
+          <button id="redoBtn" aria-label="Refés (Ctrl+Y)" title="Refés (Ctrl+Y)">↷</button>
+          <button id="deleteBtn" aria-label="Esborra la selecció (Supr)" title="Esborra la selecció (Supr)">⌫</button>
         </div>
         <div class="toolgroup" aria-label="Simulació">
-          <button id="simulateBtn" class="primary">▶ Simula</button>
-          <button id="resetBtn" title="Reinicia la simulació" disabled>Reinicia</button>
+          <button id="simulateBtn" class="primary" aria-label="Inicia la simulació" title="Inicia la simulació">▶</button>
+          <button id="resetBtn" aria-label="Reinicia la simulació" title="Reinicia la simulació" disabled>↻</button>
         </div>
         <div class="toolgroup" aria-label="Vista">
-          <button id="zoomOutBtn" title="Allunya">−</button>
-          <button id="zoomInBtn" title="Apropa">+</button>
-          <button id="fitBtn" title="Ajusta la vista">Ajusta</button>
+          <button id="zoomOutBtn" aria-label="Allunya" title="Allunya">−</button>
+          <button id="zoomInBtn" aria-label="Apropa" title="Apropa">+</button>
+          <button id="fitBtn" aria-label="Ajusta la vista" title="Ajusta la vista">⛶</button>
         </div>
       </div>
     </header>
 
     <main class="workspace">
       <aside class="library" aria-label="Biblioteca de components">
-        <div class="aside-title"><span>Components</span><small>Biblioteca pneumàtica</small></div>
-        <p class="aside-help">Tria un component i fes clic al llenç, o arrossega'l fins al llenç.</p>
+        <div class="aside-title"><span>Components</span></div>
         <div id="libraryItems" class="library-items"></div>
         <div class="library-footer">
           <button id="exampleSupplyBtn">Exemple alimentació</button>
@@ -97,4 +98,3 @@
   </div>
 </body>
 </html>
-
