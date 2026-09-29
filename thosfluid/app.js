@@ -5,7 +5,6 @@ const NS = "http://www.w3.org/2000/svg";
 const FORMAT = "thosfluid-circuit";
 const VERSION = 2;
 const BACKUP_KEY = "thosfluid:last-circuit:v1";
-const BACKUP_OPTION_KEY = "thosfluid:backup-enabled";
 const MAX_COMPONENTS = 80;
 const MAX_CONNECTIONS = 160;
 
@@ -150,11 +149,10 @@ function remember() {
   future = [];
 }
 function storeBackup() {
-  if (!$("backupToggle").checked) return;
   try {
     localStorage.setItem(BACKUP_KEY, JSON.stringify(serializableCircuit()));
     $("restorePanel").hidden = true;
-  } catch (_) { status("No s'ha pogut actualitzar la còpia local. Descarrega el JSON."); }
+  } catch (_) { status("No s'ha pogut desar la còpia automàtica en aquest navegador. Descarrega el JSON."); }
 }
 function edit(action) {
   if (running) return;
@@ -1525,12 +1523,6 @@ function setupControls() {
     handle.addEventListener("pointercancel", () => { panelDrag = null; });
   }
   $("circuitName").addEventListener("change", e => { const value = e.target.value.trim().slice(0, 80) || "Circuit nou"; if (value !== circuit.metadata.name && !running) edit(() => { circuit.metadata.name = value; }); });
-  $("backupToggle").addEventListener("change", e => {
-    try {
-      if (e.target.checked) { localStorage.setItem(BACKUP_OPTION_KEY, "1"); storeBackup(); status("Còpia de recuperació activada en aquest navegador."); }
-      else { localStorage.removeItem(BACKUP_OPTION_KEY); localStorage.removeItem(BACKUP_KEY); $("restorePanel").hidden = true; status("Còpia de recuperació desactivada i esborrada."); }
-    } catch (_) { e.target.checked = false; status("L'emmagatzematge local no està disponible."); }
-  });
   $("clearBackupBtn").addEventListener("click", () => { try { localStorage.removeItem(BACKUP_KEY); $("restorePanel").hidden = true; status("Còpia de recuperació esborrada."); } catch (_) { status("No s'ha pogut esborrar la còpia."); } });
   $("restoreBtn").addEventListener("click", () => {
     try {
@@ -1554,10 +1546,9 @@ function setupControls() {
 function init() {
   setupLibrary(); setupCanvas(); setupControls();
   try {
-    $("backupToggle").checked = localStorage.getItem(BACKUP_OPTION_KEY) === "1";
-    $("restorePanel").hidden = !($("backupToggle").checked && localStorage.getItem(BACKUP_KEY));
+    $("restorePanel").hidden = !localStorage.getItem(BACKUP_KEY);
     if (!$("restorePanel").hidden) { $("circuitOptions").hidden = false; $("circuitOptionsBtn").setAttribute("aria-expanded", "true"); }
-  } catch (_) { $("backupToggle").checked = false; }
+  } catch (_) { $("restorePanel").hidden = true; }
   resetRuntime(); render();
 }
 init();
