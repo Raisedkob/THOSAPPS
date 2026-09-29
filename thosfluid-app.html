@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THOSFLUID — Simulador pneumàtic</title>
-  <link rel="stylesheet" href="thosfluid/app.css">
-  <script src="thosfluid/app.js" defer></script>
+  <link rel="stylesheet" href="thosfluid/app.css?v=20260929-symbols">
+  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-symbols">
+  <script src="thosfluid/app.js?v=20260929-symbols" defer></script>
 </head>
 <body>
   <div class="app">
@@ -16,6 +17,7 @@
           <button id="newBtn" title="Circuit nou">Nou</button>
           <button id="openBtn" title="Obre un fitxer JSON del dispositiu">Obre</button>
           <button id="saveBtn" title="Descarrega el circuit en un fitxer JSON">Desa</button>
+          <button id="circuitOptionsBtn" aria-expanded="false" aria-controls="circuitOptions">Circuit</button>
           <input id="fileInput" type="file" accept=".json,application/json" hidden>
         </div>
         <div class="toolgroup" aria-label="Edició">
@@ -54,13 +56,20 @@
           <g id="world"></g>
         </svg>
         <div class="legend"><span><i class="line pressure"></i> Pressió</span><span><i class="line exhaust"></i> Escapament</span><span><i class="line idle"></i> Sense pressió</span></div>
+        <aside id="componentInspector" class="inspector floating-panel" aria-label="Propietats del component" hidden>
+          <div id="inspectorHandle" class="panel-heading">
+            <strong id="inspectorTitle">Component</strong>
+            <button id="closeInspectorBtn" class="close-panel" aria-label="Tanca les propietats">×</button>
+          </div>
+          <div id="selectionPanel" class="selection-panel"></div>
+        </aside>
       </section>
 
-      <aside class="inspector" aria-label="Estat i propietats">
-        <div class="aside-title"><span>Circuit</span><small id="circuitCount">0 components</small></div>
+      <aside id="circuitOptions" class="circuit-options floating-panel" aria-label="Opcions del circuit" hidden>
+        <div class="panel-heading"><strong>Circuit</strong><button id="closeCircuitOptionsBtn" class="close-panel" aria-label="Tanca les opcions del circuit">×</button></div>
+        <p id="circuitCount" class="aside-help">0 components</p>
         <label class="field-label" for="circuitName">Nom</label>
         <input id="circuitName" class="text-field" type="text" maxlength="80" value="Circuit nou">
-        <div id="selectionPanel" class="selection-panel"><p>Selecciona un component per veure'n els ports i l'estat.</p></div>
         <div class="section-divider"></div>
         <label class="switch-row"><input id="backupToggle" type="checkbox"><span>Còpia de recuperació <small>Guarda només l'últim circuit en aquest navegador.</small></span></label>
         <button id="clearBackupBtn" class="secondary wide">Esborra la còpia</button>
