@@ -111,7 +111,7 @@ let selectedType = null;
 let pendingPort = null;
 let running = false;
 // Keep every runtime group available before the library renders its symbol previews.
-let runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {}, relays: {}, electrical: {} };
+let runtime = { valves: {}, pressed: {}, cylinders: {}, cylinderProgress: {}, cylinderTargets: {}, cylinderStepRemainder: {}, timers: {}, timerTicks: {}, relays: {}, electrical: {}, stepCount: 0 };
 let simulation = null;
 const timerHandles = new Map();
 let simulationRefreshPending = false;
@@ -121,6 +121,8 @@ let dirty = false;
 let pointerAction = null;
 let activeMomentaryId = null;
 let panMode = false;
+let stepMode = false;
+let stepAdvancePending = false;
 let clipboardComponent = null;
 let cursorWorldPoint = null;
 
@@ -152,28 +154,30 @@ function edit(action) {
   render();
 }
 function resetRuntime() {
+  stepAdvancePending = false;
   for (const handle of timerHandles.values()) clearTimeout(handle);
   timerHandles.clear();
-  runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {}, relays: {}, electrical: {} };
+  runtime = { valves: {}, pressed: {}, cylinders: {}, cylinderProgress: {}, cylinderTargets: {}, cylinderStepRemainder: {}, timers: {}, timerTicks: {}, relays: {}, electrical: {}, stepCount: 0 };
   for (const component of circuit.components) {
     if (DISTRIBUTORS.has(component.type)) runtime.valves[component.id] = false;
     if (component.type === "valve53") runtime.valves[component.id] = "center";
     if (component.type === "valve5Pilot") runtime.valves[component.id] = false;
-    if (component.type === "timer3") runtime.timers[component.id] = false;
+    if (component.type === "timer3") { runtime.timers[component.id] = false; runtime.timerTicks[component.id] = 0; }
     if (component.type === "valve5Electric") runtime.valves[component.id] = false;
     if (component.type === "electricSwitch") runtime.valves[component.id] = false;
-    if (component.type === "single" || component.type === "double") runtime.cylinders[component.id] = "retracted";
+    if (component.type === "single" || component.type === "double") { runtime.cylinders[component.id] = "retracted"; runtime.cylinderProgress[component.id] = 0; runtime.cylinderTargets[component.id] = "retracted"; runtime.cylinderStepRemainder[component.id] = 0; }
   }
   simulation = null;
 }
 function setRunning(next) {
   running = next;
   activeMomentaryId = null;
+  stepAdvancePending = false;
   pendingPort = null;
   selectedType = null;
   panMode = false;
   resetRuntime();
-  status(next ? "Simulació activa. Acciona una vàlvula i observa els conductes." : "Mode edició. Clica dos ports per connectar-los.");
+  status(next ? stepMode ? "Simulació pas a pas activa. Acciona els comandaments i prem Avança." : "Simulació activa. Acciona una vàlvula i observa els conductes." : "Mode edició. Clica dos ports per connectar-los.");
   render();
 }
 
@@ -373,6 +377,13 @@ function queueSimulationRefresh() {
   simulationRefreshPending = true;
   requestAnimationFrame(() => { simulationRefreshPending = false; if (running) render(); });
 }
+function advanceSimulationStep() {
+  if (!running || !stepMode) return;
+  runtime.stepCount += 1;
+  stepAdvancePending = true;
+  render();
+  if (!simulation?.conflicts.size) status(`Pas ${runtime.stepCount}: s'han actualitzat el moviment i els retards actius.`);
+}
 function buildElectricalSimulation() {
   const relays = Object.create(null), energized = Object.create(null);
   const nodes = [];
@@ -415,7 +426,7 @@ function buildElectricalSimulation() {
   }
   return { relays, energized, activeWires, activePorts: new Set([...plus, ...minus]) };
 }
-function buildSimulation() {
+function buildSimulation(advanceTimeStep = false) {
   const electrical = buildElectricalSimulation();
   runtime.relays = electrical.relays;
   runtime.electrical = electrical.energized;
@@ -530,16 +541,38 @@ function buildSimulation() {
     }
   }
   const cylinderSpeeds = {}, oldCylinders = { ...runtime.cylinders };
+  const commandCylinder = (component, target, speed) => {
+    const id = component.id;
+    if (!stepMode) {
+      runtime.cylinders[id] = target;
+      runtime.cylinderProgress[id] = target === "extended" ? 4 : 0;
+      runtime.cylinderTargets[id] = target;
+      return;
+    }
+    if (runtime.cylinderTargets[id] !== target) {
+      runtime.cylinderTargets[id] = target;
+      runtime.cylinderStepRemainder[id] = 0;
+    }
+    if (!advanceTimeStep) return;
+    const interval = Math.max(1, 4 - speed);
+    const remainder = (runtime.cylinderStepRemainder[id] || 0) + 1;
+    if (remainder < interval) { runtime.cylinderStepRemainder[id] = remainder; return; }
+    runtime.cylinderStepRemainder[id] = 0;
+    const current = runtime.cylinderProgress[id] || 0;
+    const next = clamp(current + (target === "extended" ? 1 : -1), 0, 4);
+    runtime.cylinderProgress[id] = next;
+    runtime.cylinders[id] = next === 4 ? "extended" : next === 0 ? "retracted" : "moving";
+  };
   for (const c of circuit.components) {
     if (c.type === "single") {
       const a = key(c.id, "A");
-      if (pressure.has(a) && !conflicts.has(a)) { runtime.cylinders[c.id] = "extended"; cylinderSpeeds[c.id] = pressureSpeed.get(a) || 3; }
-      else if (exhaust.has(a) && !conflicts.has(a)) { runtime.cylinders[c.id] = "retracted"; cylinderSpeeds[c.id] = exhaustSpeed.get(a) || 3; }
+      if (pressure.has(a) && !conflicts.has(a)) { cylinderSpeeds[c.id] = pressureSpeed.get(a) || 3; commandCylinder(c, "extended", cylinderSpeeds[c.id]); }
+      else if (exhaust.has(a) && !conflicts.has(a)) { cylinderSpeeds[c.id] = exhaustSpeed.get(a) || 3; commandCylinder(c, "retracted", cylinderSpeeds[c.id]); }
     }
     if (c.type === "double") {
       const a = key(c.id, "A"), b = key(c.id, "B");
-      if (pressure.has(a) && exhaust.has(b) && !conflicts.has(a) && !conflicts.has(b)) { runtime.cylinders[c.id] = "extended"; cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(a) || 3, exhaustSpeed.get(b) || 3); }
-      else if (pressure.has(b) && exhaust.has(a) && !conflicts.has(a) && !conflicts.has(b)) { runtime.cylinders[c.id] = "retracted"; cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(b) || 3, exhaustSpeed.get(a) || 3); }
+      if (pressure.has(a) && exhaust.has(b) && !conflicts.has(a) && !conflicts.has(b)) { cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(a) || 3, exhaustSpeed.get(b) || 3); commandCylinder(c, "extended", cylinderSpeeds[c.id]); }
+      else if (pressure.has(b) && exhaust.has(a) && !conflicts.has(a) && !conflicts.has(b)) { cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(b) || 3, exhaustSpeed.get(a) || 3); commandCylinder(c, "retracted", cylinderSpeeds[c.id]); }
     }
   }
   let cylinderChanged = false;
@@ -552,11 +585,20 @@ function buildSimulation() {
   for (const c of circuit.components.filter(item => item.type === "timer3")) {
     const signal = pressure.has(key(c.id, "X"));
     if (!signal) {
+      const wasRunning = runtime.timers[c.id] || (runtime.timerTicks[c.id] || 0) > 0;
       const handle = timerHandles.get(c.id);
       if (handle) clearTimeout(handle);
       timerHandles.delete(c.id);
       runtime.timers[c.id] = false;
-    } else if (!runtime.timers[c.id] && !timerHandles.has(c.id)) {
+      runtime.timerTicks[c.id] = 0;
+      if (wasRunning) queueSimulationRefresh();
+    } else if (stepMode && !runtime.timers[c.id]) {
+      if (advanceTimeStep) {
+        runtime.timerTicks[c.id] = (runtime.timerTicks[c.id] || 0) + 1;
+        const requiredTicks = ({ short: 1, medium: 2, long: 4 })[c.properties?.delay] || 2;
+        if (runtime.timerTicks[c.id] >= requiredTicks) { runtime.timers[c.id] = true; queueSimulationRefresh(); }
+      }
+    } else if (!stepMode && !runtime.timers[c.id] && !timerHandles.has(c.id)) {
       const delay = ({ short: 700, medium: 1400, long: 2400 })[c.properties?.delay] || 1400;
       timerHandles.set(c.id, setTimeout(() => { timerHandles.delete(c.id); if (running) { runtime.timers[c.id] = true; render(); } }, delay));
     }
@@ -572,6 +614,7 @@ function portState(componentId, portId) {
   return "idle";
 }
 function releaseMomentary() {
+  if (stepMode) return;
   if (!activeMomentaryId) return;
   runtime.pressed[activeMomentaryId] = false;
   activeMomentaryId = null;
@@ -639,8 +682,8 @@ function drawSymbol(group, c, previousCylinderState) {
     svg("line", { x1: 66, y1: 50, x2: closed ? 89 : 80, y2: closed ? 50 : 35, class: "symbol" }, group);
     if (momentary || c.type === "electricLimit") { svg("line", { x1: 73, y1: 20, x2: 83, y2: 20, class: "symbol" }, group); svg("line", { x1: 78, y1: 20, x2: 78, y2: 32, class: "symbol" }, group); }
     if (momentary || c.type === "electricSwitch") {
-      const button = svg("rect", { x: 55, y: 17, width: 47, height: 44, rx: 4, class: `actuator${closed ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": momentary ? "Mantén premut el polsador elèctric" : "Commuta l'interruptor elèctric" }, group);
-      const trigger = e => { e.stopPropagation(); if (!running) return; if (momentary && activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } else if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; render(); };
+      const button = svg("rect", { x: 55, y: 17, width: 47, height: 44, rx: 4, class: `actuator${closed ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": momentary ? stepMode ? "Clica per activar o desactivar l'ordre elèctrica; prem Avança per continuar" : "Mantén premut el polsador elèctric" : "Commuta l'interruptor elèctric" }, group);
+      const trigger = e => { e.stopPropagation(); if (!running) return; if (momentary && stepMode) runtime.pressed[c.id] = !runtime.pressed[c.id]; else if (momentary && activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } else if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; render(); };
       const release = e => { e.stopPropagation(); if (activeMomentaryId === c.id) releaseMomentary(); };
       button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
       button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); trigger(e); } }); button.addEventListener("keyup", release);
@@ -772,7 +815,7 @@ function drawSymbol(group, c, previousCylinderState) {
     const actuator = properties.actuator || DEFAULT_ACTUATOR[c.type];
     const actuatorLabel = actuator === "lever" ? "palanca" : actuator === "pedal" ? "pedal" : "polsador";
     const article = actuator === "lever" ? "la" : "el";
-    const ariaLabel = momentary ? `Mantén premut ${article} ${actuatorLabel} de la vàlvula ${def.short}` : `Commuta la vàlvula ${def.short} amb ${article} ${actuatorLabel}`;
+    const ariaLabel = momentary ? stepMode ? `Clica per activar o desactivar ${article} ${actuatorLabel} de la vàlvula ${def.short}; prem Avança per continuar` : `Mantén premut ${article} ${actuatorLabel} de la vàlvula ${def.short}` : `Commuta la vàlvula ${def.short} amb ${article} ${actuatorLabel}`;
     if (actuator === "lever") {
       button = svg("circle", { cx: 15, cy: 54, r: 6, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
       svg("path", { d: `M15 54l15 -18 M29 72H${left + offset}`, class: "symbol" }, group);
@@ -783,7 +826,7 @@ function drawSymbol(group, c, previousCylinderState) {
       button = svg("rect", { x: 4, y: 56, width: 25, height: 32, rx: 2, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
       svg("path", { d: `M29 72H${left + offset} M10 50h13 M16 50v6`, class: "symbol" }, group);
     }
-    const trigger = e => { e.stopPropagation(); if (!running) return; if (!momentary) { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
+    const trigger = e => { e.stopPropagation(); if (!running) return; if (!momentary) { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else if (stepMode) { runtime.pressed[c.id] = !runtime.pressed[c.id]; render(); } else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
     const release = e => { e.stopPropagation(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger);
     button.addEventListener("pointerup", release);
@@ -793,14 +836,16 @@ function drawSymbol(group, c, previousCylinderState) {
   } else if (c.type === "single" || c.type === "double") {
     svg("rect", { x: 20, y: 38, width: 130, height: 57, class: "norm-box" }, group);
     const extended = runtime.cylinders[c.id] === "extended";
-    const pistonX = extended ? 112 : 56;
+    const progress = clamp(runtime.cylinderProgress[c.id] ?? (extended ? 4 : 0), 0, 4) / 4;
+    const pistonX = 56 + 56 * progress;
+    const rodEnd = 172 + 36 * progress;
     const piston = svg("rect", { x: pistonX, y: 41, width: 5, height: 51, class: "piston" }, group);
-    const rod = svg("line", { x1: pistonX + 5, y1: 65, x2: extended ? 208 : 172, y2: 65, class: "symbol" }, group);
+    const rod = svg("line", { x1: pistonX + 5, y1: 65, x2: rodEnd, y2: 65, class: "symbol" }, group);
     svg("path", { d: "M150 58v14", class: "symbol" }, group);
     svg("line", { x1: 40, y1: 95, x2: 40, y2: 140, class: "norm-port-line" }, group);
     if (c.type === "double") svg("line", { x1: 130, y1: 95, x2: 130, y2: 140, class: "norm-port-line" }, group);
     else symbolSpring(group, pistonX + 12, 82, Math.max(18, 140 - pistonX - 20));
-    if (previousCylinderState && previousCylinderState !== runtime.cylinders[c.id] && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!stepMode && previousCylinderState && previousCylinderState !== runtime.cylinders[c.id] && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
       const oldX = previousCylinderState === "extended" ? 112 : 56;
       const oldEnd = previousCylinderState === "extended" ? 208 : 172;
       const speed = simulation?.cylinderSpeeds?.[c.id] || 3;
@@ -862,7 +907,7 @@ function renderInspector() {
     const label = document.createElement("label"); label.className = "field-label"; label.htmlFor = "relayName"; label.textContent = "Referència del relé"; panel.append(label);
     const input = document.createElement("input"); input.id = "relayName"; input.className = "text-field"; input.maxLength = 12; input.value = c.properties.relay || "K1"; input.addEventListener("change", () => edit(() => { c.properties.relay = input.value.trim().slice(0, 12) || "K1"; })); panel.append(input);
   }
-  if (c.type === "single" || c.type === "double") { const p = document.createElement("p"); p.textContent = `Èmbol: ${runtime.cylinders[c.id] === "extended" ? "estès" : "retret"}`; panel.append(p); }
+  if (c.type === "single" || c.type === "double") { const p = document.createElement("p"); const state = runtime.cylinders[c.id]; p.textContent = `Èmbol: ${state === "extended" ? "estès" : state === "retracted" ? "retret" : "en moviment"}`; panel.append(p); }
   if (DISTRIBUTORS.has(c.type) && !running) {
     const actuatorLabel = document.createElement("label"); actuatorLabel.className = "field-label"; actuatorLabel.textContent = "Accionament"; actuatorLabel.htmlFor = "actuatorMode"; panel.append(actuatorLabel);
     const actuatorSelect = document.createElement("select"); actuatorSelect.id = "actuatorMode"; actuatorSelect.className = "text-field";
@@ -908,7 +953,7 @@ function renderInspector() {
     }
   }
   if (running && c.type === "limitValve3") { const target = targetCylinderFor(c); const p = document.createElement("p"); p.textContent = `Final mecànic ${target && runtime.cylinders[target.id] === (c.properties.targetEnd || "extended") ? "accionat" : "en repòs"}.`; panel.append(p); }
-  if (running && c.type === "timer3") { const p = document.createElement("p"); p.textContent = runtime.timers[c.id] ? "Retard completat; sortida activa." : timerHandles.has(c.id) ? "Retard en curs." : "En espera de senyal a X."; panel.append(p); }
+  if (running && c.type === "timer3") { const p = document.createElement("p"); const needed = ({ short: 1, medium: 2, long: 4 })[c.properties?.delay] || 2; p.textContent = runtime.timers[c.id] ? "Retard completat; sortida activa." : stepMode ? `Pasos de retard: ${runtime.timerTicks[c.id] || 0}/${needed}.` : timerHandles.has(c.id) ? "Retard en curs." : "En espera de senyal a X."; panel.append(p); }
   if (running && c.type === "valve5Pilot") { const p = document.createElement("p"); p.textContent = `Posició ${runtime.valves[c.id] ? "P–A / B–S" : "P–B / A–R"}. X commuta cap a A; Y commuta cap a B.`; panel.append(p); }
   if (running && c.type === "valve5Electric") { const p = document.createElement("p"); p.textContent = runtime.electrical[c.id] ? "Bobina energitzada; posició P–A / B–S." : "Bobina desenergitzada; retorn per molla a P–B / A–R."; panel.append(p); }
   if (running && DISTRIBUTORS.has(c.type)) {
@@ -918,8 +963,8 @@ function renderInspector() {
     const actuator = properties.actuator;
     const actuatorLabel = actuator === "lever" ? "palanca" : actuator === "pedal" ? "pedal" : "polsador";
     const article = actuator === "lever" ? "la" : "el";
-    button.textContent = momentary ? `Mantén premut ${article} ${actuatorLabel}` : `Commuta amb ${article} ${actuatorLabel}`;
-    const trigger = e => { e.preventDefault(); if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } render(); };
+    button.textContent = momentary ? stepMode ? `${runtime.pressed[c.id] ? "Ordre activada" : "Activa l'ordre"}; prem Avança i clica de nou per deixar-la anar` : `Mantén premut ${article} ${actuatorLabel}` : `Commuta amb ${article} ${actuatorLabel}`;
+    const trigger = e => { e.preventDefault(); if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; else if (stepMode) runtime.pressed[c.id] = !runtime.pressed[c.id]; else if (activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } render(); };
     const release = e => { e.preventDefault(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
     button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") trigger(e); });
@@ -929,7 +974,9 @@ function renderInspector() {
 }
 function render() {
   const previousCylinderStates = { ...runtime.cylinders };
-  simulation = running ? buildSimulation() : null;
+  const advanceTimeStep = stepAdvancePending;
+  stepAdvancePending = false;
+  simulation = running ? buildSimulation(advanceTimeStep) : null;
   const world = $("world"); world.replaceChildren();
   world.setAttribute("transform", `translate(${circuit.view.pan.x} ${circuit.view.pan.y}) scale(${circuit.view.zoom})`);
   $("circuitCanvas").classList.toggle("pan", panMode);
@@ -945,8 +992,13 @@ function render() {
   $("simulateLabel").textContent = running ? "Edita" : "Simula";
   $("simulateBtn").setAttribute("aria-label", running ? "Atura la simulació i torna a editar" : "Inicia la simulació");
   $("simulateBtn").title = running ? "Atura la simulació i torna a editar" : "Inicia la simulació";
-  $("modeLabel").textContent = running ? "Mode simulació" : "Mode edició";
-  $("canvasHint").textContent = running ? "Acciona els comandaments i observa l'aire i els senyals elèctrics." : pendingPort ? "Clica per afegir girs; amb teclat usa fletxes i Retorn. Acaba en un port compatible." : panMode ? "Arrossega el llenç per moure la vista." : "Clica dos ports per connectar-los; afegeix girs amb clics al llenç.";
+  $("modeLabel").textContent = running ? stepMode ? "Simulació pas a pas" : "Mode simulació" : stepMode ? "Mode pas a pas preparat" : "Mode edició";
+  $("canvasHint").textContent = running ? stepMode ? "Acciona un comandament i prem Avança per moure els cilindres i completar els temporitzadors." : "Acciona els comandaments i observa l'aire i els senyals elèctrics." : pendingPort ? "Clica per afegir girs; amb teclat usa fletxes i Retorn. Acaba en un port compatible." : panMode ? "Arrossega el llenç per moure la vista." : "Clica dos ports per connectar-los; afegeix girs amb clics al llenç.";
+  $("stepModeBtn").disabled = running;
+  $("stepModeBtn").setAttribute("aria-pressed", String(stepMode));
+  $("stepModeBtn").title = stepMode ? "Desactiva el mode pas a pas" : "Activa el mode pas a pas";
+  $("stepModeBtn").classList.toggle("active-tool", stepMode);
+  $("stepBtn").disabled = !running || !stepMode;
   $("resetBtn").disabled = !running;
   $("deleteBtn").disabled = running || !selected;
   $("copyBtn").disabled = running || selected?.kind !== "component";
@@ -1197,6 +1249,8 @@ function setupControls() {
   $("undoBtn").addEventListener("click", undo);
   $("redoBtn").addEventListener("click", redo);
   $("simulateBtn").addEventListener("click", () => setRunning(!running));
+  $("stepModeBtn").addEventListener("click", () => { if (running) return; stepMode = !stepMode; resetRuntime(); render(); status(stepMode ? "Mode pas a pas activat. Inicia la simulació i avança amb Avança." : "Mode de simulació contínua activat."); });
+  $("stepBtn").addEventListener("click", advanceSimulationStep);
   $("resetBtn").addEventListener("click", () => { resetRuntime(); render(); status("Simulació reiniciada."); });
   $("zoomInBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom * 1.2, .55, 2.4); render(); });
   $("zoomOutBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom / 1.2, .55, 2.4); render(); });
