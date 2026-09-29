@@ -81,12 +81,12 @@ Els nivells orienten filtres i exemples, però no han de bloquejar components. E
 | --- | --- |
 | Alimentació | Font d'aire (compressor simplificat), acumulador i unitat de manteniment. Aquests dos últims són elements de pas lògic, sense càlcul de pressió ni model físic. |
 | Actuadors | Cilindre de simple efecte amb retorn per molla i de doble efecte, amb posicions extremes i moviment visible. |
-| Distribució | Vàlvules 2/2, 3/2, 4/2 i 5/2; posició de repòs, connexions internes per posició i variants normalment obertes/tancades quan pertoqui. 5/3 opcional després del MVP. |
-| Accionaments | Manuals: polsador, palanca i pedal, amb retorn per molla o posició mantinguda. Final de cursa mecànic 3/2 amb cilindre supervisat configurable. Vàlvula 5/2 de doble pilotatge X/Y amb memòria de posició. |
-| Regulació | Regulador de cabal qualitatiu bidireccional i regulador unidireccional amb antiretorn intern. La posició regulada limita la categoria de velocitat visual; el sentit contrari passa lliurement. |
+| Distribució | Vàlvules 2/2 NC, 3/2 NC/NO seleccionable, 4/2 i 5/2; posició de repòs i connexions internes per posició. Vàlvula 5/3 amb centre tancat, a escapament o a pressió. |
+| Accionaments | Manuals: polsador, palanca i pedal, amb retorn per molla o posició mantinguda. Final de cursa mecànic 3/2 amb tija directa, corró o lleva i cilindre supervisat configurable. Vàlvula 5/2 de doble pilotatge X/Y amb memòria de posició. |
+| Regulació | Regulador de cabal qualitatiu bidireccional i regulador unidireccional amb antiretorn intern. La posició regulada limita la categoria de velocitat visual; el sentit contrari passa lliurement. Vàlvula d'escapament ràpid amb alimentació P–A i evacuació local A–R quan P queda sense pressió. |
 | Pas i lògica | Vàlvula antiretorn configurable P→A o A→P; vàlvules AND i OR amb dues entrades X/Y i una sortida A. |
 | Seqüència | Temporitzador pneumàtic 3/2 amb entrada de senyal X i retard curt/mitjà/llarg. Distribuïdor manual 5/3 amb centre tancat. |
-| Connexions | Unió en T explícita de tres ports. Cada tram es dibuixa amb clics intermedis; un simple creuament de recorreguts no connecta xarxes. |
+| Connexions | Unió pneumàtica en T i unió elèctrica en T, totes dues explícites i de tres ports. Cada tram es dibuixa amb clics intermedis; un simple creuament de recorreguts no connecta xarxes. |
 
 Els símbols s'han de dibuixar de manera coherent amb la simbologia pneumàtica convencional de la família ISO 1219: una casella per posició del distribuïdor, fletxes per als passos oberts, topalls per als ports tancats, accionament i molla als costats, i èmbol, tija i molla als cilindres que correspongui. La [làmina de referència facilitada](https://i0.wp.com/www.joucomatic.com.es/wp-content/uploads/2018/05/simbologia-neumatica2.jpg) orienta la forma dels símbols. Cal revisar cada variant de la biblioteca abans d'afirmar una conformitat formal amb la norma. El funcionament prové de la definició de ports i posicions, mai de la geometria del dibuix.
 
@@ -101,7 +101,7 @@ La primera implementació cobreix font lògica, polsador NO/NC, interruptor, bob
 - Solenoides i electrovàlvules monoestables o biestables, segons el model concret.
 - Cables elèctrics visualment diferents dels conductes pneumàtics.
 
-Queden pendents les electrovàlvules biestables, sensors addicionals, circuits de relé amb variants d'automanteniment i la revisió docent dels símbols elèctrics.
+Queden pendents sensors addicionals, circuits de relé amb variants d'automanteniment i la revisió docent dels símbols elèctrics i dels exemples.
 
 L'electrovàlvula té una part elèctrica que determina l'accionament i una part pneumàtica que comunica els ports de treball. Els dominis no s'han de barrejar en una mateixa connexió.
 
@@ -185,7 +185,7 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
 }
 ```
 
-El format es manté a **v1** per conservar els circuits descarregats. Els tipus acceptats són `source`, `receiver`, `maintenance`, `checkValve`, `flowRegulator`, `flowRegulatorOneWay`, `valve2`, `valve3`, `valve4`, `valve5`, `valve53`, `valve5Pilot`, `limitValve3`, `logicOr`, `logicAnd`, `timer3`, `single` i `double`. Els components nous guarden propietats qualitatives (`direction`, `opening`, `regulatedDirection`, `targetCylinder`, `targetEnd`, `delay`); els validadors completen per defecte les propietats absents en fitxers anteriors. `receiver` i `maintenance` comuniquen passivament `P–A`. Els distribuïdors manuals admeten `actuator` i `returnMode`; `valve53` inicia al centre tancat. `valve5Pilot` rep ordres a X/Y i conserva l'última posició. `timer3` rep l'ordre a X; els retards curt/mitjà/llarg són només una espera visual. `from` i `to` identifiquen extrems, mentre que el motor aplica la direcció definida pels elements interns. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
+El format actual és **v2**; el validador també accepta fitxers v1 i completa les propietats noves amb valors per defecte. Els tipus acceptats inclouen `source`, `note`, `tee`, `electricJunction`, `receiver`, `maintenance`, `checkValve`, `flowRegulator`, `flowRegulatorOneWay`, `quickExhaust`, `valve2`, `valve3`, `valve4`, `valve5`, `valve53`, `valve5Pilot`, `limitValve3`, `logicOr`, `logicAnd`, `timer3`, `single`, `double`, `electricSource`, `electricPush`, `electricPushNC`, `electricSwitch`, `electricLimit`, `relayCoil`, `relayContactNO`, `relayContactNC`, `valve5Electric` i `valve5ElectricBistable`. Els components nous guarden propietats qualitatives (`direction`, `opening`, `regulatedDirection`, `targetCylinder`, `targetEnd`, `delay`); els validadors completen per defecte les propietats absents en fitxers anteriors. `receiver` i `maintenance` comuniquen passivament `P–A`. Els distribuïdors manuals admeten `actuator` i `returnMode`; `valve3` també desa `normallyOpen`; `valve53` desa el centre seleccionat (`closed`, `exhaust` o `pressure`). `valve5Pilot` rep ordres a X/Y i conserva l'última posició. `timer3` rep l'ordre a X; els retards curt/mitjà/llarg són només una espera visual. `from` i `to` identifiquen extrems, mentre que el motor aplica la direcció definida pels elements interns. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
 
 Afegir medis explícits, rotació, recorreguts o nous contractes requereix una migració documentada i compatibilitat amb els circuits v1 descarregats. No canviar silenciosament els noms ni la forma dels camps mantenint el mateix número de versió.
 
@@ -280,7 +280,7 @@ Fer servir colors **i també** patrons, icones o text per diferenciar pressió, 
 
 Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després de cada acció. Han de servir de referència durant el desenvolupament del motor i de revisió visual de l'app.
 
-**Cobertura d'exemples preparada:** alimentació, regulació, derivació en T, 2/2, 3/2, 4/2, 5/2, final de cursa, lògica AND i temporitzador, a més d'electroneumàtica. Són exemples editables per orientar l'alumnat; encara cal revisar-ne cada resultat al navegador i amb criteri docent.
+**Cobertura d'exemples preparada:** alimentació, regulació, derivació en T, 2/2, 3/2 NC i NO, 4/2, 5/2, final de cursa, lògica AND, temporitzador, escapament ràpid i electropneumàtica monoestable i biestable. Són exemples editables per orientar l'alumnat; encara cal revisar-ne cada resultat al navegador i amb criteri docent.
 
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
@@ -307,17 +307,17 @@ Integració publicada: entrada THOSFLUID i llenç independent, biblioteca per fa
 
 ### Fase 1 — MVP pneumàtic
 
-Nucli publicat amb font d'aire, acumulador i unitat de manteniment passius, regulador qualitatiu, distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Accionament configurable amb polsador, palanca o pedal i retorn per molla o posició mantinguda. El mode pas a pas ja permet avançar els cilindres i els temporitzadors de forma controlada. Resten pendents la comprovació interactiva dels deu circuits de referència i la revisió del flux d'importació en navegadors d'aula.
+Nucli publicat amb font d'aire, acumulador i unitat de manteniment passius, regulació qualitativa, distribuïdors 2/2 NC, 3/2 NC/NO, 4/2, 5/2 i 5/3 amb tres centres, escapament ràpid, exemples i recuperació local. Accionament configurable amb polsador, palanca o pedal i retorn per molla o posició mantinguda. El mode pas a pas ja permet avançar els cilindres i els temporitzadors de forma controlada. Resten pendents la comprovació interactiva dels deu circuits de referència i la revisió del flux d'importació en navegadors d'aula.
 
  Font d'aire, acumulador i unitat de manteniment, regulador de cabal qualitatiu, cilindres simple i doble, 2/2 NC, 3/2, 4/2 i 5/2, polsador, palanca, pedal, molla, posició mantinguda, motor discret i pressió/escapament visibles. Cobrir els circuits 1–4 i 7.
 
 ### Fase 2 — Lògica i seqüències
 
-Disponibles: antiretorn, regulador unidireccional, final de cursa mecànic 3/2, pilotatge doble X/Y, lògica AND/OR, temporitzador pneumàtic qualitatiu i distribuïdor 5/3 de centre tancat. Resta pendent revisar els circuits compostos i completar la verificació dels casos 5–8 i 10.
+Disponibles: antiretorn, regulador unidireccional, escapament ràpid, final de cursa mecànic 3/2 amb tija/corró/lleva, pilotatge doble X/Y, lògica AND/OR, temporitzador pneumàtic qualitatiu i distribuïdor 5/3 amb tres opcions de centre. Resta pendent revisar els circuits compostos i completar la verificació dels casos 5–8 i 10.
 
 ### Fase 3 — Electropneumàtica
 
-Primera base implementada a la còpia de treball: font, polsadors NO/NC, interruptor, relé i contactes NO/NC, final de cursa i electrovàlvula 5/2 monoestable. Pendents: circuits compostos, biestabilitat i acceptació docent de símbols i exemples.
+Base disponible: font, unió elèctrica en T, polsadors NO/NC, interruptor, relé i contactes NO/NC, final de cursa i electrovàlvules 5/2 monoestable i biestable. Pendents: circuits compostos i acceptació docent de símbols i exemples.
 
 ### Fase 4 — Acabat
 
