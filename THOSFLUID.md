@@ -85,7 +85,7 @@ Els nivells orienten filtres i exemples, però no han de bloquejar components. E
 | Accionaments | Manuals: polsador, palanca i pedal, amb retorn per molla o posició mantinguda. Final de cursa mecànic 3/2 amb tija directa, corró o lleva i cilindre supervisat configurable. Vàlvula 5/2 de doble pilotatge X/Y amb memòria de posició. |
 | Regulació | Regulador de cabal qualitatiu bidireccional i regulador unidireccional amb antiretorn intern. La posició regulada limita la categoria de velocitat visual; el sentit contrari passa lliurement. Vàlvula d'escapament ràpid amb alimentació P–A i evacuació local A–R quan P queda sense pressió. |
 | Pas i lògica | Vàlvula antiretorn configurable P→A o A→P; vàlvules AND i OR amb dues entrades X/Y i una sortida A. |
-| Seqüència | Temporitzador pneumàtic 3/2 amb entrada de senyal X i retard curt/mitjà/llarg. Distribuïdor manual 5/3 amb centre tancat. |
+| Seqüència | Temporitzador pneumàtic 3/2 amb entrada de senyal X i retard curt/mitjà/llarg. Distribuïdor manual 5/3 amb centre tancat, a escapament o a pressió. |
 | Connexions | Unió pneumàtica en T i unió elèctrica en T, totes dues explícites i de tres ports. Cada tram es dibuixa amb clics intermedis; un simple creuament de recorreguts no connecta xarxes. |
 
 Els símbols s'han de dibuixar de manera coherent amb la simbologia pneumàtica convencional de la família ISO 1219: una casella per posició del distribuïdor, fletxes per als passos oberts, topalls per als ports tancats, accionament i molla als costats, i èmbol, tija i molla als cilindres que correspongui. La [làmina de referència facilitada](https://i0.wp.com/www.joucomatic.com.es/wp-content/uploads/2018/05/simbologia-neumatica2.jpg) orienta la forma dels símbols. Cal revisar cada variant de la biblioteca abans d'afirmar una conformitat formal amb la norma. El funcionament prové de la definició de ports i posicions, mai de la geometria del dibuix.
@@ -254,12 +254,12 @@ La signatura ha de tenir un ordre estable per identificador i contenir tots els 
 
 - Una font activa posa pressió a la xarxa compatible; una línia sense font no la crea.
 - El pas a escapament descarrega; si una xarxa queda simultàniament alimentada i comunicada a escapament, el motor ha de marcar un **conflicte de model** i explicar-lo, en lloc de fingir un resultat físic.
-- Una vàlvula només comunica els ports definits per la seva posició actual. Una molla porta a la posició de repòs quan cessa l'ordre; una vàlvula biestable conserva la darrera posició fins a l'ordre contrària.
+- Una vàlvula només comunica els ports definits per la seva posició actual. Una 3/2 NC tanca P en repòs; una 3/2 NO comunica P–A en repòs. Una molla porta a la posició de repòs quan cessa l'ordre; una vàlvula biestable conserva la darrera posició fins a l'ordre contrària.
 - El cilindre de simple efecte avança amb pressió a la cambra i retorna per molla quan descarrega. El de doble efecte avança si una cambra rep pressió i l'altra pot descarregar; retrocedeix amb les condicions inverses. En altres casos manté l'estat o aplica la regla de repòs definida pel model.
 - Un final de cursa canvia d'estat només quan s'arriba a l'extrem corresponent; no durant la interpolació visual.
 - AND activa la sortida amb les dues entrades; OR amb qualsevol de les dues.
 - Un regulador `tancat` impedeix el pas en el sentit configurat. `poc`, `mitjà` i `obert` permeten el pas i ajusten només l'animació qualitativa. El regulador unidireccional deixa passar lliurement el sentit contrari.
-- Una antiretorn només deixa passar el sentit configurat. El final de cursa mecànic commuta el seu distribuïdor quan el cilindre supervisat arriba a l'extrem seleccionat; el pilotatge X/Y commuta una 5/2 i en conserva la posició.
+- Una antiretorn només deixa passar el sentit configurat. L'escapament ràpid connecta P–A per alimentar i evacua A–R quan P queda sense pressió. El final de cursa mecànic commuta quan el cilindre supervisat arriba a l'extrem seleccionat; tija directa, corró i lleva en són les variants d'accionament. El pilotatge X/Y commuta una 5/2 i en conserva la posició.
 - La vàlvula OR comunica una entrada pressuritzada amb A; la AND ho fa quan X i Y tenen pressió. El temporitzador 3/2, mentre rep pressió a X, obre P–A després del retard seleccionat; si desapareix el senyal, retorna A–R.
 - Un contacte NO/NC modifica la continuïtat elèctrica. La bobina d'un relé governa els contactes amb la mateixa referència; un solenoide actiu governa la posició de l'electrovàlvula vinculada.
 - Si hi ha ordres oposades simultànies i el model de vàlvula no defineix prioritat, avisar del conflicte i aplicar una regla documentada i determinista.
@@ -285,7 +285,7 @@ Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després 
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
 | 1 | Font → 3/2 NC/NO amb polsador i molla → cilindre simple; variant 2/2 NC | Comprovar les dues posicions normals de la 3/2: NC tanca P en repòs i NO comunica P–A en repòs; accionar inverteix cada estat. Amb 3/2: prémer avança i deixar anar connecta `A–R`, descarrega i retorna. Amb 2/2: prémer avança i deixar anar tanca el pas; la cambra conserva qualitativament l'estat estès. Polsador, palanca i pedal canvien la icona i l'accionament; el retorn per molla actua mentre es manté l'ordre, i la posició mantinguda conserva l'estat fins a la següent commutació. |
-| 2 | Font → 5/2 biestable → cilindre de doble efecte | Ordre A: avançament; ordre B: retrocés; en cada estat es mostren les dues comunicacions internes correctes. |
+| 2 | Font → 5/2 biestable → cilindre de doble efecte; variants de centre 5/3 | Ordre A: avançament; ordre B: retrocés; en cada estat es mostren les comunicacions internes correctes. A la 5/3, comprovar centre tancat, a escapament i a pressió. |
 | 3 | 5/2 monoestable i cilindre de doble efecte | L'accionament canvia la posició; en deixar-lo anar la molla retorna la vàlvula i el cilindre segons els ports connectats. |
 | 4 | 4/2 i cilindre de doble efecte | Les dues posicions inverteixen alimentació i descàrrega de les cambres. |
 | 5 | Cilindre i final de cursa mecànic | El final de cursa s'activa només en arribar a l'extrem configurat i es desactiva en sortir-ne. |
