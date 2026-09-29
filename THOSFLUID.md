@@ -381,4 +381,13 @@ Estructura consultada el **28 de setembre de 2026**; document actualitzat el **2
 - La connexió de ports incompatibles i els encreuaments sense unió explícita es tracten separadament.
 - Estat de revisió: cal fer una passada de navegador per verificar la interacció i l'aspecte, i completar la revisió docent dels exemples i símbols. No s'ha d'interpretar l'edició de codi com a acceptació final.
 
+## Ampliació de components — 29 de setembre de 2026
 
+S'incorporen quatre elements comuns a la biblioteca, mantenint la simulació qualitativa i sense magnituds físiques:
+
+- **Vàlvula 3/2 pilotada pneumàticament:** ports P, A, R i X. Sense senyal a X connecta A amb R; amb senyal de pressió a X connecta P amb A. Retorn per molla representat al símbol.
+- **Sensor magnètic de cilindre:** contacte elèctric 1–2 que tanca quan el cilindre supervisat arriba a l'extrem seleccionat (estès o retret). La selecció del cilindre i extrem es desa amb el component.
+- **Relé temporitzador elèctric:** bobina A1–A2 i contacte normalment obert 15–18. Quan la bobina rep alimentació, el contacte tanca després d'un retard curt, mitjà o llarg. En retirar l'alimentació, es reinicia.
+- **Vàlvula seqüencial de pressió:** ports P, A, R i X. El senyal a X inicia un llindar qualitatiu baix, mitjà o alt; en completar-se, s'obre P–A. La selecció és una abstracció de passos/retard per ensenyar seqüències, no una lectura o càlcul de pressió real.
+
+En mode pas a pas, els retards i el llindar avancen amb els passos lògics. En mode continu, s'animen amb retards qualitatius. El circuit elèctric conserva el mateix model de continuïtat booleana de la versió actual. Els quatre elements tenen circuits d'exemple a la biblioteca.
