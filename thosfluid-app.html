@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THOSFLUID — Simulador pneumàtic</title>
   <link rel="stylesheet" href="thosfluid/app.css?v=20260929-distribuidors">
-  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-distribuidors">
-  <script src="thosfluid/app.js?v=20260929-regulador-cabal" defer></script>
+  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-flux-aire">
+  <script src="thosfluid/app.js?v=20260929-flux-aire" defer></script>
 </head>
 <body>
   <div class="app">
@@ -59,7 +59,7 @@
           <rect width="1200" height="700" fill="url(#grid)" data-background="1"></rect>
           <g id="world"></g>
         </svg>
-        <div class="legend"><span><i class="line pressure"></i> Pressió</span><span><i class="line exhaust"></i> Escapament</span><span><i class="line idle"></i> Sense pressió</span></div>
+        <div class="legend"><span><i class="line pressure"></i> Pressió</span><span><i class="line exhaust"></i> Escapament</span><span><i class="line idle"></i> Sense pressió</span><span>Els traços en moviment indiquen el sentit del flux</span></div>
         <aside id="componentInspector" class="inspector floating-panel" aria-label="Propietats del component" hidden>
           <div id="inspectorHandle" class="panel-heading">
             <strong id="inspectorTitle">Component</strong>
