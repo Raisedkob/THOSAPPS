@@ -31,7 +31,7 @@ No s'hi calculen bar, cabals reals, forces, diàmetres, velocitats físiques, p�
 
 ### Referència visual: THOSLAB
 
-THOSFLUID ha de seguir el disseny de treball de **THOSLAB v2.0**: capçalera pròpia de la suite, barra d'eines compacta amb accions agrupades, fons fosc, llenç central amb quadrícula discreta, components dibuixats sobre l'esquema, panells laterals i controls clars de zoom, fitxer i simulació. Mantenir la jerarquia visual, la mida dels controls i el llenguatge de la resta de Tecno-Apps. La semblança és d'interfície; el motor de THOSFLUID continua sent lògic i no adopta els càlculs elèctrics de THOSLAB.
+THOSFLUID ha de seguir el disseny de treball de **THOSLAB v2.0**: capçalera pròpia de la suite, barra d'eines compacta amb accions agrupades, fons fosc, llenç central amb quadrícula discreta, components dibuixats sobre l'esquema i controls clars de zoom, fitxer i simulació. La biblioteca pot ocupar el costat esquerre. **No hi ha un inspector fix a la dreta:** en seleccionar un component apareix una finestra petita de propietats sobre el llenç, que es pot moure i tancar; les opcions generals del circuit s'obren amb el botó «Circuit». Mantenir la jerarquia visual, la mida dels controls i el llenguatge de la resta de Tecno-Apps. La semblança és d'interfície; el motor de THOSFLUID continua sent lògic i no adopta els càlculs elèctrics de THOSLAB.
 
 La portada ha d'incloure una **targeta activa THOSFLUID** amb el mateix format 16:9, etiqueta de categoria, títol, descripció i botó «Obrir aplicació» que les altres targetes. La imatge pròpia `thosfluid.svg` ha de mostrar visualment una font, una vàlvula, conductes i un cilindre sobre un fons fosc, d'acord amb les imatges de la suite. La targeta obre `thosfluid.html` i aquesta ruta ha d'oferir una app funcional.
 
@@ -87,7 +87,7 @@ Els nivells orienten filtres i exemples, però no han de bloquejar components. E
 | Pas i lògica | Antiretorn, vàlvules AND i OR pneumàtiques. |
 | Seqüència | Temporitzador pneumàtic de retard discret; finals de cursa vinculats als extrems dels cilindres. |
 
-Els símbols s'han de dibuixar de manera coherent i llegible. El seu funcionament prové de la definició de ports i posicions, mai de la geometria del dibuix.
+Els símbols s'han de dibuixar de manera coherent amb la simbologia pneumàtica convencional de la família ISO 1219: una casella per posició del distribuïdor, fletxes per als passos oberts, topalls per als ports tancats, accionament i molla als costats, i èmbol, tija i molla als cilindres que correspongui. La [làmina de referència facilitada](https://i0.wp.com/www.joucomatic.com.es/wp-content/uploads/2018/05/simbologia-neumatica2.jpg) orienta la forma dels símbols. Cal revisar cada variant de la biblioteca abans d'afirmar una conformitat formal amb la norma. El funcionament prové de la definició de ports i posicions, mai de la geometria del dibuix.
 
 ### Electricitat i electropneumàtica V1
 
@@ -260,7 +260,7 @@ La validació d'importació ha de rebutjar JSON malformat o amb versió no compa
 
 ## 9. Accessibilitat i disposició
 
-La disposició de referència és una barra superior amb nom del circuit i controls, una biblioteca lateral, el llenç central i un panell contextual de propietats/estat. El treball de dibuix es prioritza en ordinador d'aula; en pantalles petites s'ha de poder consultar l'esquema, operar la simulació i fer edicions bàsiques sense exigir un arrossegament precís.
+La disposició de referència és una barra superior amb controls, una biblioteca lateral esquerra, el llenç central i una finestra contextual petita de propietats/estat que només apareix en seleccionar un element. La finestra es pot moure i tancar. Les opcions de nom i recuperació del circuit s'obren amb un botó de la barra. El treball de dibuix es prioritza en ordinador d'aula; en pantalles petites s'ha de poder consultar l'esquema, operar la simulació i fer edicions bàsiques sense exigir un arrossegament precís.
 
 Fer servir colors **i també** patrons, icones o text per diferenciar pressió, escapament, línia sense pressió, cable actiu i components accionats. El moviment del cilindre ha de respectar `prefers-reduced-motion`, amb pausa d'animació. Proporcionar navegació per teclat, ordre de focus coherent, botons amb nom accessible, contrast suficient i avisos de simulació llegibles pels lectors de pantalla.
 
