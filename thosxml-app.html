@@ -269,10 +269,16 @@
           references.push(reference.replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+/g, '/'));
         }
       };
-      const walker = node.ownerDocument.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-      while (walker.nextNode()) collectReferences(walker.currentNode.nodeValue);
-      Array.from(node.querySelectorAll('*')).forEach(element => {
-        Array.from(element.attributes).forEach(attribute => collectReferences(attribute.value));
+      // Moodle HTML is stored in <text> fields. Reading textContent includes
+      // both text and CDATA children, while excluding names, metadata and file
+      // payloads that could otherwise create false file references.
+      const htmlTextParents = new Set([
+        'questiontext', 'answer', 'subquestion', 'generalfeedback', 'feedback',
+        'correctfeedback', 'partiallycorrectfeedback', 'incorrectfeedback', 'hint'
+      ]);
+      Array.from(node.querySelectorAll('text')).forEach(textElement => {
+        const parentTag = textElement.parentElement && textElement.parentElement.tagName.toLowerCase();
+        if (htmlTextParents.has(parentTag)) collectReferences(textElement.textContent);
       });
       const keysSeen = new Set();
       fileRecords.forEach(record => {
