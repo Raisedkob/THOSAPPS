@@ -467,7 +467,7 @@ function buildSimulation(advanceTimeStep = false) {
       if (c.properties?.regulatedDirection === "AtoP") linkRates(port("P"), port("A"), 3, rate);
       else linkRates(port("P"), port("A"), rate, 3);
     }
-    if (["valve3", "valve4", "valve5", "valve53", "valve5Pilot", "valve5Electric", "valve5ElectricBistable", "limitValve3", "timer3"].includes(c.type)) exhaustSeeds.push(port("R"));
+    if (["valve3", "valve4", "valve5", "valve53", "valve5Pilot", "valve5Electric", "valve5ElectricBistable", "limitValve3", "timer3", "quickExhaust"].includes(c.type)) exhaustSeeds.push(port("R"));
     if (["valve5", "valve53", "valve5Pilot", "valve5Electric", "valve5ElectricBistable"].includes(c.type)) exhaustSeeds.push(port("S"));
     const active = c.properties?.returnMode === "spring" ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
     if (c.type === "valve2" && active) link(port("P"), port("A"));
