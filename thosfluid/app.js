@@ -13,6 +13,7 @@ const TYPES = {
   source: { label: "Font d'aire", short: "FONT", hint: "Equivalent al compressor", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
   receiver: { label: "Acumulador", short: "ACUMULADOR", hint: "Pas d'aire; sense acumulació calculada", glyph: "▱", family: "supply", w: 200, h: 120, ports: { P: [0, 60], A: [200, 60] } },
   maintenance: { label: "Unitat de manteniment", short: "FILTRE · REGULADOR · LUBRICADOR", hint: "Passa l'aire; sense regulació física", glyph: "⚙", family: "supply", w: 260, h: 140, ports: { P: [0, 70], A: [260, 70] } },
+  flowRegulator: { label: "Regulador de cabal", short: "REGULADOR", hint: "Pas qualitatiu: tancat, poc, mitjà o obert", glyph: "↗", family: "regulation", w: 220, h: 120, ports: { P: [0, 60], A: [220, 60] } },
   valve2: { label: "Vàlvula 2/2 NC", short: "2/2 NC", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0] } },
   valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
   valve4: { label: "Vàlvula 4/2", short: "4/2", hint: "Palanca · enclavament", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [165, 155] } },
@@ -106,7 +107,8 @@ function setRunning(next) {
 }
 
 function makeComponent(type, x, y) {
-  return { id: makeId("c"), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, properties: DISTRIBUTORS.has(type) ? defaultValveProperties(type) : {} };
+  const properties = DISTRIBUTORS.has(type) ? defaultValveProperties(type) : type === "flowRegulator" ? { opening: "open" } : {};
+  return { id: makeId("c"), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, properties };
 }
 function addComponent(type, x, y) {
   if (!TYPES[type] || circuit.components.length >= MAX_COMPONENTS) return status("No es poden afegir més components.");
@@ -178,7 +180,7 @@ function validateCircuit(data) {
   const name = String(data.metadata?.name || "Circuit nou").slice(0, 80);
   const zoom = Number.isFinite(data.view?.zoom) ? clamp(data.view.zoom, .55, 2.4) : 1;
   const pan = { x: Number.isFinite(data.view?.pan?.x) ? clamp(data.view.pan.x, -1500, 1500) : 0, y: Number.isFinite(data.view?.pan?.y) ? clamp(data.view.pan.y, -1000, 1000) : 0 };
-  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: DISTRIBUTORS.has(c.type) ? { actuator: ["pushbutton", "lever", "pedal"].includes(c.properties?.actuator) ? c.properties.actuator : DEFAULT_ACTUATOR[c.type], returnMode: c.properties?.returnMode === "spring" ? "spring" : c.properties?.returnMode === "memory" ? "memory" : defaultValveProperties(c.type).returnMode } : {} })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
+  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: DISTRIBUTORS.has(c.type) ? { actuator: ["pushbutton", "lever", "pedal"].includes(c.properties?.actuator) ? c.properties.actuator : DEFAULT_ACTUATOR[c.type], returnMode: c.properties?.returnMode === "spring" ? "spring" : c.properties?.returnMode === "memory" ? "memory" : defaultValveProperties(c.type).returnMode } : c.type === "flowRegulator" ? { opening: ["closed", "low", "medium", "open"].includes(c.properties?.opening) ? c.properties.opening : "open" } : {} })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
 }
 function downloadCircuit() {
   const text = JSON.stringify(circuit, null, 2);
@@ -212,14 +214,19 @@ function newCircuit() {
 
 function buildSimulation() {
   const graph = new Map();
+  const rates = new Map();
   const ensure = id => { if (!graph.has(id)) graph.set(id, new Set()); };
-  const link = (a, b) => { ensure(a); ensure(b); graph.get(a).add(b); graph.get(b).add(a); };
+  const link = (a, b, rate = 3) => { ensure(a); ensure(b); graph.get(a).add(b); graph.get(b).add(a); rates.set(`${a}\u0000${b}`, rate); rates.set(`${b}\u0000${a}`, rate); };
   const pressureSeeds = [];
   const exhaustSeeds = [];
   for (const c of circuit.components) {
     for (const portId of Object.keys(TYPES[c.type].ports)) ensure(key(c.id, portId));
     if (c.type === "source") pressureSeeds.push(key(c.id, "P"));
     if (c.type === "receiver" || c.type === "maintenance") link(key(c.id, "P"), key(c.id, "A"));
+    if (c.type === "flowRegulator") {
+      const level = { closed: 0, low: 1, medium: 2, open: 3 }[c.properties?.opening] ?? 3;
+      if (level > 0) link(key(c.id, "P"), key(c.id, "A"), level);
+    }
     if (c.type === "valve3" || c.type === "valve4" || c.type === "valve5") {
       exhaustSeeds.push(key(c.id, "R"));
       if (c.type === "valve5") exhaustSeeds.push(key(c.id, "S"));
@@ -249,20 +256,34 @@ function buildSimulation() {
   };
   const pressure = flood(pressureSeeds);
   const exhaust = flood(exhaustSeeds);
+  const speedFlood = seeds => {
+    const levels = new Map(seeds.map(node => [node, 3]));
+    const queue = [...seeds];
+    for (let i = 0; i < queue.length; i++) {
+      const node = queue[i], level = levels.get(node);
+      for (const next of graph.get(node) || []) {
+        const nextLevel = Math.min(level, rates.get(`${node}\u0000${next}`) ?? 3);
+        if (nextLevel > (levels.get(next) || 0)) { levels.set(next, nextLevel); queue.push(next); }
+      }
+    }
+    return levels;
+  };
+  const pressureSpeed = speedFlood(pressureSeeds), exhaustSpeed = speedFlood(exhaustSeeds);
   const conflicts = new Set([...pressure].filter(node => exhaust.has(node)));
+  const cylinderSpeeds = {};
   for (const c of circuit.components) {
     if (c.type === "single") {
       const a = key(c.id, "A");
-      if (pressure.has(a) && !conflicts.has(a)) runtime.cylinders[c.id] = "extended";
-      else if (exhaust.has(a) && !conflicts.has(a)) runtime.cylinders[c.id] = "retracted";
+      if (pressure.has(a) && !conflicts.has(a)) { runtime.cylinders[c.id] = "extended"; cylinderSpeeds[c.id] = pressureSpeed.get(a) || 3; }
+      else if (exhaust.has(a) && !conflicts.has(a)) { runtime.cylinders[c.id] = "retracted"; cylinderSpeeds[c.id] = exhaustSpeed.get(a) || 3; }
     }
     if (c.type === "double") {
       const a = key(c.id, "A"), b = key(c.id, "B");
-      if (pressure.has(a) && exhaust.has(b) && !conflicts.has(a) && !conflicts.has(b)) runtime.cylinders[c.id] = "extended";
-      else if (pressure.has(b) && exhaust.has(a) && !conflicts.has(a) && !conflicts.has(b)) runtime.cylinders[c.id] = "retracted";
+      if (pressure.has(a) && exhaust.has(b) && !conflicts.has(a) && !conflicts.has(b)) { runtime.cylinders[c.id] = "extended"; cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(a) || 3, exhaustSpeed.get(b) || 3); }
+      else if (pressure.has(b) && exhaust.has(a) && !conflicts.has(a) && !conflicts.has(b)) { runtime.cylinders[c.id] = "retracted"; cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(b) || 3, exhaustSpeed.get(a) || 3); }
     }
   }
-  return { pressure, exhaust, conflicts };
+  return { pressure, exhaust, conflicts, cylinderSpeeds };
 }
 function portState(componentId, portId) {
   if (!running || !simulation) return "idle";
@@ -334,6 +355,13 @@ function drawSymbol(group, c, previousCylinderState) {
     svgText(group, 64, 116, "filtre", "sub", { "text-anchor": "middle" });
     svgText(group, 118, 116, "regulador", "sub", { "text-anchor": "middle" });
     svgText(group, 172, 116, "lubricador", "sub", { "text-anchor": "middle" });
+  } else if (c.type === "flowRegulator") {
+    svg("line", { x1: 0, y1: 60, x2: 220, y2: 60, class: "norm-port-line" }, group);
+    svg("path", { d: "M78 48l22 12-22 12z M142 48l-22 12 22 12z", class: "symbol" }, group);
+    symbolArrow(group, 104, 91, 135, 29);
+    const opening = c.properties?.opening || "open";
+    const label = { closed: "tancat", low: "poc", medium: "mitjà", open: "obert" }[opening] || "obert";
+    svgText(group, 110, 108, label, "sub", { "text-anchor": "middle" });
   } else if (["valve2", "valve3", "valve4", "valve5"].includes(c.type)) {
     const is2 = c.type === "valve2", is3 = c.type === "valve3", is4 = c.type === "valve4";
     const properties = { ...defaultValveProperties(c.type), ...c.properties };
@@ -404,9 +432,11 @@ function drawSymbol(group, c, previousCylinderState) {
     if (previousCylinderState && previousCylinderState !== runtime.cylinders[c.id] && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
       const oldX = previousCylinderState === "extended" ? 112 : 56;
       const oldEnd = previousCylinderState === "extended" ? 208 : 172;
-      svg("animate", { attributeName: "x", from: oldX, to: pistonX, dur: ".35s", fill: "freeze" }, piston);
-      svg("animate", { attributeName: "x1", from: oldX + 5, to: pistonX + 5, dur: ".35s", fill: "freeze" }, rod);
-      svg("animate", { attributeName: "x2", from: oldEnd, to: extended ? 208 : 172, dur: ".35s", fill: "freeze" }, rod);
+      const speed = simulation?.cylinderSpeeds?.[c.id] || 3;
+      const duration = speed === 1 ? "1.4s" : speed === 2 ? ".75s" : ".35s";
+      svg("animate", { attributeName: "x", from: oldX, to: pistonX, dur: duration, fill: "freeze" }, piston);
+      svg("animate", { attributeName: "x1", from: oldX + 5, to: pistonX + 5, dur: duration, fill: "freeze" }, rod);
+      svg("animate", { attributeName: "x2", from: oldEnd, to: extended ? 208 : 172, dur: duration, fill: "freeze" }, rod);
     }
   }
 }
@@ -464,6 +494,13 @@ function renderInspector() {
     select.value = c.properties.returnMode || defaultValveProperties(c.type).returnMode;
     select.addEventListener("change", () => edit(() => { c.properties.returnMode = select.value; })); panel.append(select);
   }
+  if (c.type === "flowRegulator" && !running) {
+    const label = document.createElement("label"); label.className = "field-label"; label.textContent = "Obertura qualitativa"; label.htmlFor = "flowOpening"; panel.append(label);
+    const select = document.createElement("select"); select.id = "flowOpening"; select.className = "text-field";
+    for (const [value, text] of [["closed", "Tancat"], ["low", "Poc"], ["medium", "Mitjà"], ["open", "Obert"]]) { const opt = document.createElement("option"); opt.value = value; opt.textContent = text; select.append(opt); }
+    select.value = c.properties.opening || "open";
+    select.addEventListener("change", () => edit(() => { c.properties.opening = select.value; })); panel.append(select);
+  }
   if (running && DISTRIBUTORS.has(c.type)) {
     const button = document.createElement("button"); button.className = "secondary wide";
     const properties = { ...defaultValveProperties(c.type), ...c.properties };
@@ -517,6 +554,20 @@ function loadExample(kind) {
     ], view: { zoom: .86, pan: { x: 40, y: 10 } } };
     selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
     status("Exemple d'alimentació carregat. Simula'l i acciona la vàlvula 3/2.");
+    return;
+  }
+  if (kind === "flow") {
+    const source = { id: "font", type: "source", x: 90, y: 255, properties: {} };
+    const regulator = { id: "regulador", type: "flowRegulator", x: 260, y: 245, properties: { opening: "low" } };
+    const valve = { id: "valvula", type: "valve3", x: 535, y: 230, properties: defaultValveProperties("valve3") };
+    const cylinder = { id: "cilindre", type: "single", x: 860, y: 245, properties: {} };
+    circuit = { format: FORMAT, version: VERSION, metadata: { name: "Exemple: regulació qualitativa de cabal" }, components: [source, regulator, valve, cylinder], connections: [
+      { id: "aire_font", from: { componentId: source.id, portId: "P" }, to: { componentId: regulator.id, portId: "P" } },
+      { id: "aire_regulador", from: { componentId: regulator.id, portId: "A" }, to: { componentId: valve.id, portId: "P" } },
+      { id: "aire_valvula", from: { componentId: valve.id, portId: "A" }, to: { componentId: cylinder.id, portId: "A" } }
+    ], view: { zoom: .86, pan: { x: 30, y: 10 } } };
+    selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
+    status("Exemple de regulador carregat en obertura «poc». Simula'l i acciona la vàlvula.");
     return;
   }
   const is2 = kind === "twoTwo", is3 = kind === "simple", is4 = kind === "fourTwo";
@@ -649,6 +700,7 @@ function setupControls() {
   $("zoomOutBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom / 1.2, .55, 2.4); render(); });
   $("fitBtn").addEventListener("click", () => { circuit.view = { zoom: 1, pan: { x: 0, y: 0 } }; render(); });
   $("exampleSupplyBtn").addEventListener("click", () => loadExample("supply"));
+  $("exampleFlowBtn").addEventListener("click", () => loadExample("flow"));
   $("exampleValve2Btn").addEventListener("click", () => loadExample("twoTwo"));
   $("exampleSimpleBtn").addEventListener("click", () => loadExample("simple"));
   $("exampleValve4Btn").addEventListener("click", () => loadExample("fourTwo"));
