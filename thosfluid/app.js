@@ -10,11 +10,11 @@ const MAX_COMPONENTS = 80;
 const MAX_CONNECTIONS = 160;
 
 const TYPES = {
-  source: { label: "Font d'aire", short: "FONT", hint: "Pressió lògica", glyph: "◉", w: 105, h: 90, ports: { P: [105, 45] } },
-  valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Polsador · molla", glyph: "⇄", w: 150, h: 100, ports: { P: [0, 48], A: [150, 48], R: [75, 100] } },
-  valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Dues posicions", glyph: "⇅", w: 160, h: 120, ports: { P: [0, 60], A: [160, 30], B: [160, 90], R: [46, 120], S: [115, 120] } },
-  single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", w: 175, h: 95, ports: { A: [0, 47] } },
-  double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", w: 175, h: 105, ports: { A: [0, 28], B: [0, 78] } }
+  source: { label: "Font d'aire", short: "FONT", hint: "Pressió lògica", glyph: "◉", w: 105, h: 100, ports: { P: [105, 50] } },
+  valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Polsador · molla", glyph: "⇄", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
+  valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Dues posicions", glyph: "⇅", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
+  single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", w: 215, h: 140, ports: { A: [40, 140] } },
+  double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } }
 };
 
 const $ = id => document.getElementById(id);
@@ -265,18 +265,52 @@ function renderWire(world, w) {
   path.addEventListener("click", e => { e.stopPropagation(); if (!running) { selected = { kind: "wire", id: w.id }; render(); } });
   path.addEventListener("keydown", e => { if (e.key === "Enter" && !running) { selected = { kind: "wire", id: w.id }; render(); } });
 }
+function symbolArrow(group, x1, y1, x2, y2) {
+  svg("line", { x1, y1, x2, y2, class: "symbol" }, group);
+  const angle = Math.atan2(y2 - y1, x2 - x1), length = 9;
+  const a = `${x2 - length * Math.cos(angle - .5)},${y2 - length * Math.sin(angle - .5)}`;
+  const b = `${x2 - length * Math.cos(angle + .5)},${y2 - length * Math.sin(angle + .5)}`;
+  svg("polyline", { points: `${a} ${x2},${y2} ${b}`, class: "symbol" }, group);
+}
+function symbolCap(group, x, y) {
+  svg("path", { d: `M${x - 7} ${y}h14 M${x} ${y}v12`, class: "symbol" }, group);
+}
+function symbolSpring(group, x, y, width = 27) {
+  const step = width / 6;
+  svg("polyline", { points: `${x},${y} ${x + step},${y - 7} ${x + step * 2},${y + 7} ${x + step * 3},${y - 7} ${x + step * 4},${y + 7} ${x + step * 5},${y - 7} ${x + width},${y}`, class: "symbol" }, group);
+}
 function drawSymbol(group, c, previousCylinderState) {
   const def = TYPES[c.type];
   if (c.type === "source") {
-    svg("circle", { cx: 50, cy: 51, r: 22, class: "symbol" }, group);
-    svg("path", { d: "M39 61V46L50 38 61 46V61", class: "symbol" }, group);
+    svg("circle", { cx: 48, cy: 50, r: 13, class: "symbol" }, group);
+    svg("circle", { cx: 48, cy: 50, r: 3, class: "symbol-fill" }, group);
+    svg("line", { x1: 61, y1: 50, x2: 105, y2: 50, class: "norm-port-line" }, group);
   } else if (c.type === "valve3" || c.type === "valve5") {
-    svg("line", { x1: def.w / 2, y1: 28, x2: def.w / 2, y2: def.h - 20, class: "symbol" }, group);
-    svg("path", { d: `M25 ${def.h / 2 + 16} H${def.w - 25} m-13 -9 13 9 -13 9`, class: "symbol" }, group);
-    svgText(group, def.w / 2, 19, c.type === "valve3" ? "3/2 · POLSADOR" : "5/2 · COMMUTACIÓ", "sub", { "text-anchor": "middle" });
-    const active = c.type === "valve3" ? !!runtime.pressed[c.id] : !!runtime.valves[c.id] || !!runtime.pressed[c.id];
-    const button = svg("circle", { cx: def.w / 2, cy: -12, r: 13, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": c.type === "valve3" ? "Mantén premut el polsador 3/2" : "Commuta la vàlvula 5/2" }, group);
-    svgText(group, def.w / 2, -8, c.type === "valve3" ? "P" : "↕", "actuator-label", { "text-anchor": "middle" });
+    const is3 = c.type === "valve3";
+    const active = is3 ? !!runtime.pressed[c.id] : !!runtime.valves[c.id] || !!runtime.pressed[c.id];
+    const offset = active ? 60 : 0;
+    const left = is3 ? 40 : 50;
+    const spool = svg("g", { transform: `translate(${offset} 0)` }, group);
+    svg("rect", { x: left, y: 42, width: 60, height: 60, class: `norm-box${active ? " norm-active" : ""}` }, spool);
+    svg("rect", { x: left + 60, y: 42, width: 60, height: 60, class: `norm-box${active ? "" : " norm-active"}` }, spool);
+    if (is3) {
+      symbolArrow(spool, 55, 91, 65, 53); symbolCap(spool, 84, 76);
+      symbolArrow(spool, 125, 53, 145, 91); symbolCap(spool, 115, 76);
+      for (const [x, top] of [[125, true], [115, false], [145, false]]) {
+        svg("line", { x1: x, y1: top ? 0 : 102, x2: x, y2: top ? 42 : 155, class: "norm-port-line" }, group);
+      }
+    } else {
+      symbolArrow(spool, 85, 91, 75, 53); symbolArrow(spool, 100, 53, 105, 91);
+      symbolArrow(spool, 145, 91, 160, 53); symbolArrow(spool, 135, 53, 125, 91);
+      for (const x of [135, 160]) svg("line", { x1: x, y1: 0, x2: x, y2: 42, class: "norm-port-line" }, group);
+      for (const x of [125, 145, 165]) svg("line", { x1: x, y1: 102, x2: x, y2: 155, class: "norm-port-line" }, group);
+    }
+    // El triangle indica el port d'escapament, independentment del seu estat.
+    for (const x of is3 ? [145] : [125, 165]) svg("path", { d: `M${x - 6} 134h12l-6 9z`, class: "symbol" }, group);
+    const spring = is3 || c.properties.returnMode === "spring";
+    if (spring) symbolSpring(group, (is3 ? 164 : 174) + offset, 72, 27);
+    const button = svg("rect", { x: 4, y: 56, width: 25, height: 32, rx: 2, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": is3 ? "Mantén premut el polsador 3/2" : "Commuta la vàlvula 5/2" }, group);
+    svg("path", { d: `M29 72H${left + offset} M10 50h13 M16 50v6`, class: "symbol" }, group);
     const trigger = e => { e.stopPropagation(); if (!running) return; if (c.type === "valve5" && c.properties.returnMode !== "spring") { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
     const release = e => { e.stopPropagation(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger);
@@ -285,27 +319,29 @@ function drawSymbol(group, c, previousCylinderState) {
     button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); trigger(e); } });
     button.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") release(e); });
   } else {
-    svg("rect", { x: 20, y: 31, width: 105, height: 46, rx: 4, class: "symbol" }, group);
+    svg("rect", { x: 20, y: 38, width: 130, height: 57, class: "norm-box" }, group);
     const extended = runtime.cylinders[c.id] === "extended";
-    const pistonX = extended ? 100 : 56;
-    const piston = svg("rect", { x: pistonX, y: 34, width: 10, height: 40, class: "piston" }, group);
-    const rod = svg("line", { x1: pistonX + 10, y1: 54, x2: extended ? 169 : 127, y2: 54, class: "symbol" }, group);
+    const pistonX = extended ? 112 : 56;
+    const piston = svg("rect", { x: pistonX, y: 41, width: 5, height: 51, class: "piston" }, group);
+    const rod = svg("line", { x1: pistonX + 5, y1: 65, x2: extended ? 208 : 172, y2: 65, class: "symbol" }, group);
+    svg("path", { d: "M150 58v14", class: "symbol" }, group);
+    svg("line", { x1: 40, y1: 95, x2: 40, y2: 140, class: "norm-port-line" }, group);
+    if (c.type === "double") svg("line", { x1: 130, y1: 95, x2: 130, y2: 140, class: "norm-port-line" }, group);
+    else symbolSpring(group, pistonX + 12, 82, Math.max(18, 140 - pistonX - 20));
     if (previousCylinderState && previousCylinderState !== runtime.cylinders[c.id] && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const oldX = previousCylinderState === "extended" ? 100 : 56;
-      const oldEnd = previousCylinderState === "extended" ? 169 : 127;
+      const oldX = previousCylinderState === "extended" ? 112 : 56;
+      const oldEnd = previousCylinderState === "extended" ? 208 : 172;
       svg("animate", { attributeName: "x", from: oldX, to: pistonX, dur: ".35s", fill: "freeze" }, piston);
-      svg("animate", { attributeName: "x1", from: oldX + 10, to: pistonX + 10, dur: ".35s", fill: "freeze" }, rod);
-      svg("animate", { attributeName: "x2", from: oldEnd, to: extended ? 169 : 127, dur: ".35s", fill: "freeze" }, rod);
+      svg("animate", { attributeName: "x1", from: oldX + 5, to: pistonX + 5, dur: ".35s", fill: "freeze" }, rod);
+      svg("animate", { attributeName: "x2", from: oldEnd, to: extended ? 208 : 172, dur: ".35s", fill: "freeze" }, rod);
     }
-    if (c.type === "single") svgText(group, 17, 89, "↤ molla", "sub");
-    else svgText(group, 17, 99, "A", "sub");
   }
 }
 function renderComponent(world, c, previousCylinderState) {
   const def = TYPES[c.type];
   const group = svg("g", { transform: `translate(${c.x} ${c.y})`, class: `component${selected?.kind === "component" && selected.id === c.id ? " selected" : ""}`, role: "button", tabindex: "0", "aria-label": `${def.label}: ${c.id}` }, world);
   svg("rect", { x: 0, y: 0, width: def.w, height: def.h, rx: 10, class: "body" }, group);
-  svgText(group, 9, def.h - 10, def.short, "label");
+  svgText(group, c.type === "source" ? 8 : 20, c.type === "source" ? 88 : 20, def.short, "label");
   drawSymbol(group, c, previousCylinderState);
   group.addEventListener("pointerdown", e => {
     if (e.target.classList.contains("port") || e.target.classList.contains("actuator")) return;
@@ -319,8 +355,7 @@ function renderComponent(world, c, previousCylinderState) {
   });
   for (const [portId, [x, y]] of Object.entries(def.ports)) {
     const circle = svg("circle", { cx: x, cy: y, r: 7, class: `port${pendingPort?.componentId === c.id && pendingPort?.portId === portId ? " pending" : ""}`, role: "button", tabindex: running ? "-1" : "0", "aria-label": `Port ${portId} de ${def.label}` }, group);
-    const anchor = x <= 0 ? "end" : x >= def.w ? "start" : "middle";
-    svgText(group, x <= 0 ? x + 15 : x >= def.w ? x - 15 : x, y < 20 ? y + 23 : y > def.h - 15 ? y - 14 : y - 13, portId, "port-label", { "text-anchor": x <= 0 ? "start" : x >= def.w ? "end" : anchor });
+    svgText(group, x >= def.w ? x - 12 : x, y < 20 ? 31 : y > def.h - 15 ? def.h - 24 : y - 13, portId, "port-label", { "text-anchor": x >= def.w ? "end" : "middle" });
     circle.addEventListener("pointerdown", e => { e.stopPropagation(); clickPort(c.id, portId); });
     circle.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clickPort(c.id, portId); } });
   }
@@ -337,10 +372,11 @@ function worldPoint(e) {
 function renderInspector() {
   const panel = $("selectionPanel"); panel.replaceChildren();
   $("circuitCount").textContent = `${circuit.components.length} ${circuit.components.length === 1 ? "component" : "components"} · ${circuit.connections.length} ${circuit.connections.length === 1 ? "conducte" : "conductes"}`;
-  if (!selected) { const p = document.createElement("p"); p.textContent = "Selecciona un component per veure'n els ports i l'estat."; panel.append(p); return; }
-  if (selected.kind === "wire") { const h = document.createElement("h3"); h.textContent = "Conducte seleccionat"; panel.append(h); const p = document.createElement("p"); p.textContent = "Uneix dos ports pneumàtics."; panel.append(p); return; }
-  const c = circuit.components.find(x => x.id === selected.id); if (!c) return;
-  const h = document.createElement("h3"); h.textContent = TYPES[c.type].label; panel.append(h);
+  $("componentInspector").hidden = !selected;
+  if (!selected) return;
+  if (selected.kind === "wire") { $("inspectorTitle").textContent = "Conducte"; const p = document.createElement("p"); p.textContent = "Uneix dos ports pneumàtics."; panel.append(p); return; }
+  const c = circuit.components.find(x => x.id === selected.id); if (!c) { $("componentInspector").hidden = true; return; }
+  $("inspectorTitle").textContent = TYPES[c.type].label;
   for (const portId of Object.keys(TYPES[c.type].ports)) { const pill = document.createElement("span"); pill.className = "pill"; pill.textContent = `${portId}: ${portState(c.id, portId) === "pressure" ? "pressió" : portState(c.id, portId) === "exhaust" ? "escapament" : "sense pressió"}`; panel.append(pill); }
   if (c.type === "single" || c.type === "double") { const p = document.createElement("p"); p.textContent = `Èmbol: ${runtime.cylinders[c.id] === "extended" ? "estès" : "retret"}`; panel.append(p); }
   if (c.type === "valve5" && !running) {
@@ -399,7 +435,11 @@ function loadExample(kind) {
 function setupLibrary() {
   for (const [type, def] of Object.entries(TYPES)) {
     const button = document.createElement("button"); button.className = "library-item"; button.type = "button"; button.draggable = true; button.dataset.type = type;
-    const glyph = document.createElement("span"); glyph.className = "glyph"; glyph.textContent = def.glyph;
+    const glyph = document.createElement("span"); glyph.className = "glyph"; glyph.setAttribute("aria-hidden", "true");
+    const preview = svg("svg", { viewBox: `0 0 ${def.w} ${def.h}`, width: 48, height: 34 }, glyph);
+    const previewGroup = svg("g", { class: "component" }, preview);
+    drawSymbol(previewGroup, { id: `preview-${type}`, type, properties: type === "valve5" ? { returnMode: "memory" } : {} });
+    preview.querySelectorAll("[role], [tabindex]").forEach(node => { node.removeAttribute("role"); node.removeAttribute("tabindex"); });
     const labels = document.createElement("span"); const title = document.createElement("strong"); title.textContent = def.label; const hint = document.createElement("small"); hint.textContent = def.hint; labels.append(title, hint); button.append(glyph, labels);
     button.addEventListener("click", () => { if (running) return; selectedType = selectedType === type ? null : type; render(); status(selectedType ? `Fes clic al llenç per col·locar ${def.label}.` : "Eina cancel·lada."); });
     button.addEventListener("dragstart", e => { if (running) { e.preventDefault(); return; } e.dataTransfer.setData("text/plain", type); });
@@ -449,6 +489,30 @@ function setupControls() {
   $("openBtn").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", e => { openCircuit(e.target.files[0]); e.target.value = ""; });
   $("saveBtn").addEventListener("click", downloadCircuit);
+  $("circuitOptionsBtn").addEventListener("click", () => {
+    const open = $("circuitOptions").hidden;
+    $("circuitOptions").hidden = !open;
+    $("circuitOptionsBtn").setAttribute("aria-expanded", String(open));
+  });
+  $("closeCircuitOptionsBtn").addEventListener("click", () => { $("circuitOptions").hidden = true; $("circuitOptionsBtn").setAttribute("aria-expanded", "false"); });
+  $("closeInspectorBtn").addEventListener("click", () => { selected = null; render(); });
+  const handle = $("inspectorHandle"), inspector = $("componentInspector");
+  let panelDrag = null;
+  handle.addEventListener("pointerdown", e => {
+    if (e.target.closest("button")) return;
+    const bounds = inspector.getBoundingClientRect(), parent = $("circuitCanvas").getBoundingClientRect();
+    panelDrag = { x: e.clientX, y: e.clientY, left: bounds.left - parent.left, top: bounds.top - parent.top };
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener("pointermove", e => {
+    if (!panelDrag) return;
+    const parent = $("circuitCanvas").getBoundingClientRect();
+    inspector.style.right = "auto";
+    inspector.style.left = `${clamp(panelDrag.left + e.clientX - panelDrag.x, 0, Math.max(0, parent.width - inspector.offsetWidth))}px`;
+    inspector.style.top = `${clamp(panelDrag.top + e.clientY - panelDrag.y, 0, Math.max(0, parent.height - inspector.offsetHeight))}px`;
+  });
+  handle.addEventListener("pointerup", () => { panelDrag = null; });
+  handle.addEventListener("pointercancel", () => { panelDrag = null; });
   $("deleteBtn").addEventListener("click", deleteSelected);
   $("undoBtn").addEventListener("click", undo);
   $("redoBtn").addEventListener("click", redo);
@@ -489,6 +553,7 @@ function init() {
   try {
     $("backupToggle").checked = localStorage.getItem(BACKUP_OPTION_KEY) === "1";
     $("restorePanel").hidden = !($("backupToggle").checked && localStorage.getItem(BACKUP_KEY));
+    if (!$("restorePanel").hidden) { $("circuitOptions").hidden = false; $("circuitOptionsBtn").setAttribute("aria-expanded", "true"); }
   } catch (_) { $("backupToggle").checked = false; }
   resetRuntime(); render();
 }
