@@ -5,7 +5,7 @@
 **Web de destinació:** [tecno-apps.cat](https://tecno-apps.cat/)  
 **Idioma:** català a tota la interfície i la documentació funcional  
 **Públic:** ESO, batxillerat i formació professional  
-**Estat:** ampliació en curs; les còpies de desenvolupament inclouen recorreguts de conductes, unió en T, eines d'edició i una primera família electroneumàtica. Requereix comprovació visual i didàctica abans de considerar-la acceptada.
+**Estat:** el simulador publicat incorpora la biblioteca per famílies, els recorreguts de conductes, la unió en T, eines d'edició, la simulació pneumàtica i una primera família electroneumàtica. La barra segueix el patró d'icones de THOSLAB i permet descarregar una imatge PNG. El mode pas a pas s'ha incorporat al codi; resta la comprovació interactiva i docent abans de considerar-lo acceptat.
 
 **Font única del projecte:** el repositori `dep-tecno/THOSAPPS` a GitHub. L'especificació `THOSFLUID.md`, el codi, els símbols propis, els circuits d'exemple i les versions lliurades han de quedar versionats en aquest repositori.
 
@@ -37,9 +37,9 @@ La portada ha d'incloure una **targeta activa THOSFLUID** amb el mateix format 1
 
 ### MVP incorporat al repositori
 
-La versió publicada del projecte inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. L'ampliació de treball afegeix recorreguts manuals de connexions, unió en T, anotacions, còpia/enganxat de components i una primera xarxa elèctrica qualitativa amb polsadors, interruptor, relé, final de cursa elèctric i electrovàlvula 5/2 monoestable. La pàgina continua sent estàtica i els circuits de l'alumnat continuen guardant-se al dispositiu. Cal distingir el codi preparat de la validació visual i funcional a navegador.
+La versió publicada inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. L'editor ofereix famílies de components, recorreguts manuals, unió en T, anotacions, copiar/enganxar, simulació pneumàtica qualitativa, una primera xarxa electroneumàtica, exportació PNG i un mode pas a pas per moure cilindres i avançar retards amb passos lògics. Els circuits de l'alumnat continuen guardant-se al dispositiu. La comprovació visual i didàctica del mode pas a pas continua pendent.
 
-**Límits actuals:** cada port admet una connexió; per repartir una xarxa cal inserir una unió en T amb tres ports. Els creuaments visuals dels recorreguts no creen connexió. No hi ha rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; els retards i els senyals elèctrics són qualitatius. L'electrovàlvula inclosa és monoestable; encara cal ampliar els circuits de referència i revisar les variants elèctriques amb el professorat.
+**Límits actuals:** cada port admet una connexió; per repartir una xarxa cal inserir una unió en T amb tres ports. Els creuaments visuals dels recorreguts no creen connexió. No hi ha rotació. El mode pas a pas representa el moviment del cilindre i els retards amb passos lògics; les fuites, senyals i cabals continuen sent qualitatius. L'electrovàlvula inclosa és monoestable; encara cal ampliar i revisar els circuits de referència, incloses les variants elèctriques, amb criteri docent.
 
 El repositori actual publica pàgines HTML a l'arrel. `index.html` conté la navegació i les targetes de les eines; `thosdruino.html` és una aplicació en una sola pàgina; `thosvincle.html` és una pàgina d'entrada que integra `thosvincle-app.html` en un `iframe`. `sitemap.xml` enumera URL públiques. **Abans de programar, Codex ha de tornar a inspeccionar el repositori**, perquè la seva estructura pot haver canviat.
 
@@ -301,13 +301,13 @@ Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després 
 
 ### Fase 0 — Integració i editor
 
-Base publicada: entrada, portada, navegació, editor i fitxers locals. Les funcions avançades d'edició continuen pendents.
+Base publicada: entrada, portada, navegació, biblioteca per famílies i editor. Inclou connexions amb recorregut, anotacions, eines Clic/PAN/Text, desfer/refés, copiar/enganxar i exportació PNG. La verificació de cada flux d'edició i de l'obertura d'arxius locals en navegadors d'aula continua pendent.
 
 Integració publicada: entrada THOSFLUID i llenç independent, biblioteca per famílies, selecció, connexions, desfer/refés i JSON versionat. Mantenir la ruta `thosfluid.html` i la targeta activa de l'índex.
 
 ### Fase 1 — MVP pneumàtic
 
-Nucli publicat amb font d'aire, acumulador i unitat de manteniment passius, regulador de cabal qualitatiu, distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Accionament configurable amb polsador, palanca o pedal i retorn per molla o posició mantinguda; els circuits v1 antics conserven valors per defecte. Queden pendents l'avanç pas a pas i completar la verificació de tots els casos i del flux d'importació en navegadors d'aula.
+Nucli publicat amb font d'aire, acumulador i unitat de manteniment passius, regulador qualitatiu, distribuïdors 2/2 NC, 3/2, 4/2 i 5/2, exemples i recuperació local. Accionament configurable amb polsador, palanca o pedal i retorn per molla o posició mantinguda. El mode pas a pas ja permet avançar els cilindres i els temporitzadors de forma controlada. Resten pendents la comprovació interactiva dels deu circuits de referència i la revisió del flux d'importació en navegadors d'aula.
 
  Font d'aire, acumulador i unitat de manteniment, regulador de cabal qualitatiu, cilindres simple i doble, 2/2 NC, 3/2, 4/2 i 5/2, polsador, palanca, pedal, molla, posició mantinguda, motor discret i pressió/escapament visibles. Cobrir els circuits 1–4 i 7.
 
@@ -321,7 +321,7 @@ Primera base implementada a la còpia de treball: font, polsadors NO/NC, interru
 
 ### Fase 4 — Acabat
 
-Polir símbols i ajudes contextuals, accessibilitat, pantalles petites, exportació gràfica si escau, migracions de JSON i rendiment amb desenes de components. Decidir una eventual especificació d'hidràulica en una fase posterior.
+Revisar símbols i ajudes contextuals amb criteri docent, completar accessibilitat i pantalles petites, documentar migracions de JSON i revisar el rendiment amb desenes de components. L'exportació PNG ja està incorporada. Decidir una eventual especificació d'hidràulica en una fase posterior.
 
 ## 12. Estructura suggerida de fitxers
 
