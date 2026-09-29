@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 24761)
-Total output lines: 1213
+Warning: truncated output (original token count: 24818)
+Total output lines: 1216
 
 "use strict";
 
@@ -450,8 +450,7 @@ function buildSimulation() {
   const speedFlood = (seeds, reverse = false) => {
     const adjacency = reverse ? reverseGraph : graph;
     const levels = new Map(seeds.map(node => [node, 3])), queue = [...seeds];
-    for (let i = 0; i < queue.leng…8761 tokens truncated…es.targetCylinder = value; }));
-    addSelect("electricLimitEnd", "Extrem d'accionament", [["extended", "Estès"], ["retracted", "Retret"]], c.properties.targetEnd || "extended", value => edit(() => { c.properties.targetEnd = value; }));
+    for (let i = 0; i < queue.leng…8818 tokens truncated…ue; }));
   }
   if (running && c.type === "valve53") {
     const label = document.createElement("p"); label.textContent = "Tria la posició del distribuïdor."; panel.append(label);
@@ -730,6 +729,32 @@ function setupControls() {
   window.addEventListener("pointerup", releaseMomentary);
   window.addEventListener("pointercancel", releaseMomentary);
   window.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") releaseMomentary(); });
+  // Connect the core editor controls before optional file/panel controls. If
+  // older cached markup is missing an optional element, editing and simulation
+  // must remain available instead of being left with an inert canvas.
+  $("deleteBtn").addEventListener("click", deleteSelected);
+  $("panBtn").addEventListener("click", () => { panMode = !panMode; pendingPort = null; selectedType = null; render(); status(panMode ? "Eina PAN activada: arrossega el llenç." : "Eina PAN desactivada."); });
+  $("textBtn").addEventListener("click", () => { panMode = false; selectedType = selectedType === "note" ? null : "note"; render(); status(selectedType ? "Clica al llenç per afegir una anotació; edita'n el text al panell." : "Eina de text cancel·lada."); });
+  $("copyBtn").addEventListener("click", copySelected);
+  $("pasteBtn").addEventListener("click", pasteSelected);
+  $("undoBtn").addEventListener("click", undo);
+  $("redoBtn").addEventListener("click", redo);
+  $("simulateBtn").addEventListener("click", () => setRunning(!running));
+  $("resetBtn").addEventListener("click", () => { resetRuntime(); render(); status("Simulació reiniciada."); });
+  $("zoomInBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom * 1.2, .55, 2.4); render(); });
+  $("zoomOutBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom / 1.2, .55, 2.4); render(); });
+  $("fitBtn").addEventListener("click", () => { circuit.view = { zoom: 1, pan: { x: 0, y: 0 } }; render(); });
+  $("exampleSupplyBtn").addEventListener("click", () => loadExample("supply"));
+  $("exampleFlowBtn").addEventListener("click", () => loadExample("flow"));
+  $("exampleBranchBtn").addEventListener("click", () => loadExample("branch"));
+  $("exampleValve2Btn").addEventListener("click", () => loadExample("twoTwo"));
+  $("exampleSimpleBtn").addEventListener("click", () => loadExample("simple"));
+  $("exampleValve4Btn").addEventListener("click", () => loadExample("fourTwo"));
+  $("exampleDoubleBtn").addEventListener("click", () => loadExample("double"));
+  $("exampleLimitBtn").addEventListener("click", () => loadExample("limit"));
+  $("exampleLogicBtn").addEventListener("click", () => loadExample("logic"));
+  $("exampleTimerBtn").addEventListener("click", () => loadExample("timer"));
+  $("exampleElectricBtn").addEventListener("click", () => loadExample("electric"));
   $("newBtn").addEventListener("click", newCircuit);
   $("openBtn").addEventListener("click", () => $("fileInput").click());
   $("fileInput").addEventListener("change", e => { openCircuit(e.target.files[0]); e.target.value = ""; });
@@ -762,29 +787,6 @@ function setupControls() {
     handle.addEventListener("pointerup", () => { panelDrag = null; });
     handle.addEventListener("pointercancel", () => { panelDrag = null; });
   }
-  $("deleteBtn").addEventListener("click", deleteSelected);
-  $("panBtn").addEventListener("click", () => { panMode = !panMode; pendingPort = null; selectedType = null; render(); status(panMode ? "Eina PAN activada: arrossega el llenç." : "Eina PAN desactivada."); });
-  $("textBtn").addEventListener("click", () => { panMode = false; selectedType = selectedType === "note" ? null : "note"; render(); status(selectedType ? "Clica al llenç per afegir una anotació; edita'n el text al panell." : "Eina de text cancel·lada."); });
-  $("copyBtn").addEventListener("click", copySelected);
-  $("pasteBtn").addEventListener("click", pasteSelected);
-  $("undoBtn").addEventListener("click", undo);
-  $("redoBtn").addEventListener("click", redo);
-  $("simulateBtn").addEventListener("click", () => setRunning(!running));
-  $("resetBtn").addEventListener("click", () => { resetRuntime(); render(); status("Simulació reiniciada."); });
-  $("zoomInBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom * 1.2, .55, 2.4); render(); });
-  $("zoomOutBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom / 1.2, .55, 2.4); render(); });
-  $("fitBtn").addEventListener("click", () => { circuit.view = { zoom: 1, pan: { x: 0, y: 0 } }; render(); });
-  $("exampleSupplyBtn").addEventListener("click", () => loadExample("supply"));
-  $("exampleFlowBtn").addEventListener("click", () => loadExample("flow"));
-  $("exampleBranchBtn").addEventListener("click", () => loadExample("branch"));
-  $("exampleValve2Btn").addEventListener("click", () => loadExample("twoTwo"));
-  $("exampleSimpleBtn").addEventListener("click", () => loadExample("simple"));
-  $("exampleValve4Btn").addEventListener("click", () => loadExample("fourTwo"));
-  $("exampleDoubleBtn").addEventListener("click", () => loadExample("double"));
-  $("exampleLimitBtn").addEventListener("click", () => loadExample("limit"));
-  $("exampleLogicBtn").addEventListener("click", () => loadExample("logic"));
-  $("exampleTimerBtn").addEventListener("click", () => loadExample("timer"));
-  $("exampleElectricBtn").addEventListener("click", () => loadExample("electric"));
   $("circuitName").addEventListener("change", e => { const value = e.target.value.trim().slice(0, 80) || "Circuit nou"; if (value !== circuit.metadata.name && !running) edit(() => { circuit.metadata.name = value; }); });
   $("backupToggle").addEventListener("change", e => {
     try {
