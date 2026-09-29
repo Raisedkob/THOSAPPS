@@ -5,7 +5,7 @@
 **Web de destinació:** [tecno-apps.cat](https://tecno-apps.cat/)  
 **Idioma:** català a tota la interfície i la documentació funcional  
 **Públic:** ESO, batxillerat i formació professional  
-**Estat:** MVP pneumàtic publicat a Tecno-Apps; les fases de lògica avançada i electropneumàtica continuen pendents
+**Estat:** biblioteca pneumàtica ampliada amb elements de regulació, lògica, pilotatge, temporització i distribuïdor 5/3; l'electropneumàtica continua pendent
 
 **Font única del projecte:** el repositori `dep-tecno/THOSAPPS` a GitHub. L'especificació `THOSFLUID.md`, el codi, els símbols propis, els circuits d'exemple i les versions lliurades han de quedar versionats en aquest repositori.
 
@@ -37,9 +37,9 @@ La portada ha d'incloure una **targeta activa THOSFLUID** amb el mateix format 1
 
 ### MVP incorporat al repositori
 
-La primera versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. Permet col·locar i moure font d'aire, acumulador, unitat de manteniment, regulador de cabal qualitatiu, vàlvules 2/2 NC, 3/2, 4/2 i 5/2 i cilindres de simple i doble efecte, agrupats a la biblioteca per famílies; connectar ports, simular la pressió i l'escapament, accionar les vàlvules, veure el moviment del cilindre, desfer/refer, fer zoom, descarregar i obrir JSON, i activar una única còpia local de recuperació. Durant la simulació, els traços de pressió i escapament es desplacen dins dels conductes per mostrar el sentit del flux; el sentit s'actualitza amb cada commutació de vàlvula i no es representa amb fletxes. El regulador pot estar tancat, poc obert, a mitja obertura o obert: tancat bloqueja el pas i les altres posicions limiten només la velocitat visual de l'animació. L'acumulador i la unitat de manteniment deixen passar els estats lògics sense modelar acumulació, filtratge ni regulació física. La resta de components i l'electropneumàtica s'afegeixen en les fases següents. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
+La versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/refinements.css`, `thosfluid/app.js` i `thosfluid.svg`. La biblioteca inclou font d'aire, acumulador, unitat de manteniment, reguladors qualitatius, antiretorn, distribuïdors 2/2–5/3, cilindres, final de cursa mecànic 3/2, vàlvula 5/2 de doble pilotatge, vàlvules lògiques AND/OR i temporitzador pneumàtic. Durant la simulació, els traços de pressió i escapament es desplacen dins dels conductes per mostrar el sentit del flux; el sentit s'actualitza amb cada commutació de vàlvula i no es representa amb fletxes. Els reguladors només alteren el pas lògic i la categoria visual de velocitat. L'acumulador i la unitat de manteniment són elements passius. L'electropneumàtica continua pendent. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
 
-**Límits del MVP:** deu tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; encara no hi ha pilotatges, finals de cursa ni temporitzadors. L'acumulador i la unitat de manteniment són passius al model qualitatiu. El cilindre de simple efecte retorna quan la cambra descarrega per una sortida oberta; si una 2/2 la tanca després d'haver avançat, conserva qualitativament l'estat estès. Els apartats següents descriuen l'objectiu complet de V1, no una llista de funcions ja disponibles.
+**Límits de la versió actual:** divuit tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; els retards són categories qualitatives, no temps ni valors físics del component real. L'acumulador i la unitat de manteniment són passius al model. L'electropneumàtica i les connexions elèctriques encara no estan implementades.
 
 El repositori actual publica pàgines HTML a l'arrel. `index.html` conté la navegació i les targetes de les eines; `thosdruino.html` és una aplicació en una sola pàgina; `thosvincle.html` és una pàgina d'entrada que integra `thosvincle-app.html` en un `iframe`. `sitemap.xml` enumera URL públiques. **Abans de programar, Codex ha de tornar a inspeccionar el repositori**, perquè la seva estructura pot haver canviat.
 
@@ -82,10 +82,10 @@ Els nivells orienten filtres i exemples, però no han de bloquejar components. E
 | Alimentació | Font d'aire (compressor simplificat), acumulador i unitat de manteniment. Aquests dos últims són elements de pas lògic, sense càlcul de pressió ni model físic. |
 | Actuadors | Cilindre de simple efecte amb retorn per molla i de doble efecte, amb posicions extremes i moviment visible. |
 | Distribució | Vàlvules 2/2, 3/2, 4/2 i 5/2; posició de repòs, connexions internes per posició i variants normalment obertes/tancades quan pertoqui. 5/3 opcional després del MVP. |
-| Accionaments | Manuals: polsador, palanca i pedal, amb retorn per molla o posició mantinguda. Després: rodolí/èmbol mecànic i pilotatge pneumàtic. |
-| Regulació | Disponible: regulador de cabal qualitatiu tancat/poc/mitjà/obert. La posició tancada interromp el pas i les altres limiten la categoria de velocitat visual. Pendent: variant amb antiretorn i sentit regulat explícit. |
-| Pas i lògica | Antiretorn, vàlvules AND i OR pneumàtiques. |
-| Seqüència | Temporitzador pneumàtic de retard discret; finals de cursa vinculats als extrems dels cilindres. |
+| Accionaments | Manuals: polsador, palanca i pedal, amb retorn per molla o posició mantinguda. Final de cursa mecànic 3/2 amb cilindre supervisat configurable. Vàlvula 5/2 de doble pilotatge X/Y amb memòria de posició. |
+| Regulació | Regulador de cabal qualitatiu bidireccional i regulador unidireccional amb antiretorn intern. La posició regulada limita la categoria de velocitat visual; el sentit contrari passa lliurement. |
+| Pas i lògica | Vàlvula antiretorn configurable P→A o A→P; vàlvules AND i OR amb dues entrades X/Y i una sortida A. |
+| Seqüència | Temporitzador pneumàtic 3/2 amb entrada de senyal X i retard curt/mitjà/llarg. Distribuïdor manual 5/3 amb centre tancat. |
 
 Els símbols s'han de dibuixar de manera coherent amb la simbologia pneumàtica convencional de la família ISO 1219: una casella per posició del distribuïdor, fletxes per als passos oberts, topalls per als ports tancats, accionament i molla als costats, i èmbol, tija i molla als cilindres que correspongui. La [làmina de referència facilitada](https://i0.wp.com/www.joucomatic.com.es/wp-content/uploads/2018/05/simbologia-neumatica2.jpg) orienta la forma dels símbols. Cal revisar cada variant de la biblioteca abans d'afirmar una conformitat formal amb la norma. El funcionament prové de la definició de ports i posicions, mai de la geometria del dibuix.
 
@@ -175,7 +175,7 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
 }
 ```
 
-Aquest és el format **v1 del MVP publicat**. Els tipus acceptats són `source`, `receiver`, `maintenance`, `flowRegulator`, `valve2`, `valve3`, `valve4`, `valve5`, `single` i `double`. `receiver` i `maintenance` tenen ports `P` i `A` que comuniquen com a elements passius. `flowRegulator` té ports `P` i `A`; `properties.opening` admet `closed`, `low`, `medium` o `open` i, si falta en un circuit antic, s'obre per defecte. A tots els distribuïdors, `properties.actuator` admet `pushbutton`, `lever` o `pedal`; `properties.returnMode` admet `spring` o `memory`. Els circuits v1 anteriors sense aquestes propietats continuen obrint-se amb els valors per defecte de cada vàlvula. `from` i `to` identifiquen extrems; no imposen sentit de circulació. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
+El format es manté a **v1** per conservar els circuits descarregats. Els tipus acceptats són `source`, `receiver`, `maintenance`, `checkValve`, `flowRegulator`, `flowRegulatorOneWay`, `valve2`, `valve3`, `valve4`, `valve5`, `valve53`, `valve5Pilot`, `limitValve3`, `logicOr`, `logicAnd`, `timer3`, `single` i `double`. Els components nous guarden propietats qualitatives (`direction`, `opening`, `regulatedDirection`, `targetCylinder`, `targetEnd`, `delay`); els validadors completen per defecte les propietats absents en fitxers anteriors. `receiver` i `maintenance` comuniquen passivament `P–A`. Els distribuïdors manuals admeten `actuator` i `returnMode`; `valve53` inicia al centre tancat. `valve5Pilot` rep ordres a X/Y i conserva l'última posició. `timer3` rep l'ordre a X; els retards curt/mitjà/llarg són només una espera visual. `from` i `to` identifiquen extrems, mentre que el motor aplica la direcció definida pels elements interns. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
 
 Afegir medis explícits, rotació, recorreguts o nous contractes requereix una migració documentada i compatibilitat amb els circuits v1 descarregats. No canviar silenciosament els noms ni la forma dels camps mantenint el mateix número de versió.
 
@@ -248,7 +248,9 @@ La signatura ha de tenir un ordre estable per identificador i contenir tots els 
 - El cilindre de simple efecte avança amb pressió a la cambra i retorna per molla quan descarrega. El de doble efecte avança si una cambra rep pressió i l'altra pot descarregar; retrocedeix amb les condicions inverses. En altres casos manté l'estat o aplica la regla de repòs definida pel model.
 - Un final de cursa canvia d'estat només quan s'arriba a l'extrem corresponent; no durant la interpolació visual.
 - AND activa la sortida amb les dues entrades; OR amb qualsevol de les dues.
-- Un regulador `tancat` impedeix el pas en el sentit configurat. `poc`, `mitjà` i `obert` permeten el pas i ajusten només l'animació qualitativa.
+- Un regulador `tancat` impedeix el pas en el sentit configurat. `poc`, `mitjà` i `obert` permeten el pas i ajusten només l'animació qualitativa. El regulador unidireccional deixa passar lliurement el sentit contrari.
+- Una antiretorn només deixa passar el sentit configurat. El final de cursa mecànic commuta el seu distribuïdor quan el cilindre supervisat arriba a l'extrem seleccionat; el pilotatge X/Y commuta una 5/2 i en conserva la posició.
+- La vàlvula OR comunica una entrada pressuritzada amb A; la AND ho fa quan X i Y tenen pressió. El temporitzador 3/2, mentre rep pressió a X, obre P–A després del retard seleccionat; si desapareix el senyal, retorna A–R.
 - Un contacte NO/NC modifica la continuïtat elèctrica. La bobina d'un relé governa els contactes amb la mateixa referència; un solenoide actiu governa la posició de l'electrovàlvula vinculada.
 - Si hi ha ordres oposades simultànies i el model de vàlvula no defineix prioritat, avisar del conflicte i aplicar una regla documentada i determinista.
 
@@ -268,7 +270,7 @@ Fer servir colors **i també** patrons, icones o text per diferenciar pressió, 
 
 Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després de cada acció. Han de servir de referència durant el desenvolupament del motor i de revisió visual de l'app.
 
-**Cobertura actual:** l'app inclou l'exemple font d'aire → acumulador → unitat de manteniment → 3/2 → cilindre simple, un exemple de regulador de cabal a obertura «poc», a més dels exemples de 2/2 NC, 3/2, 4/2 i 5/2. Es poden muntar els casos 1, 2, 4 i 7; el cas 3 es configura canviant el retorn de la 5/2 a molla. Els casos 5, 6 i 8–10 són criteris pendents de les fases següents; encara no es poden muntar tots amb el catàleg publicat.
+**Cobertura actual:** l'app inclou exemples per a l'alimentació, regulació qualitativa i distribuïdors 2/2, 3/2, 4/2 i 5/2. El catàleg ja permet muntar els casos 1–8 i 10, incloses seqüències amb final mecànic, pilotatge i lògica pneumàtica; el cas 9 d'electropneumàtica continua pendent. Aquests són criteris de referència, no circuits d'exemple preinstal·lats ni una verificació completa de totes les combinacions.
 
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
@@ -301,7 +303,7 @@ Nucli publicat amb font d'aire, acumulador i unitat de manteniment passius, regu
 
 ### Fase 2 — Lògica i seqüències
 
-Ja disponibles: vàlvules 2/2 NC i 4/2, amb exemples de circuit, i regulador qualitatiu de cabal tancat/poc/mitjà/obert. Queden pendents els accionaments mecànics, pilotatge, finals de cursa, antiretorn, AND/OR i temporitzador. Cobrir els circuits 5, 6, 8 i 10; el circuit 7 ja es pot muntar.
+Disponibles: antiretorn, regulador unidireccional, final de cursa mecànic 3/2, pilotatge doble X/Y, lògica AND/OR, temporitzador pneumàtic qualitatiu i distribuïdor 5/3 de centre tancat. Resta pendent revisar els circuits compostos i completar la verificació dels casos 5–8 i 10.
 
 ### Fase 3 — Electropneumàtica
 
