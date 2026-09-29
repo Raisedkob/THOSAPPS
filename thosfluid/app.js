@@ -3,7 +3,7 @@
 // THOSFLUID MVP: simulació lògica pneumàtica, sense magnituds físiques.
 const NS = "http://www.w3.org/2000/svg";
 const FORMAT = "thosfluid-circuit";
-const VERSION = 1;
+const VERSION = 2;
 const BACKUP_KEY = "thosfluid:last-circuit:v1";
 const BACKUP_OPTION_KEY = "thosfluid:backup-enabled";
 const MAX_COMPONENTS = 80;
@@ -11,6 +11,8 @@ const MAX_CONNECTIONS = 160;
 
 const TYPES = {
   source: { label: "Font d'aire", short: "FONT", hint: "Equivalent al compressor", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
+  note: { label: "Anotació", short: "TEXT", hint: "Afegeix una nota al circuit", glyph: "T", family: "connections", w: 190, h: 58, ports: {} },
+  tee: { label: "Unió en T", short: "UNIÓ EN T", hint: "Deriva el conducte cap a una tercera branca", glyph: "┬", family: "connections", w: 100, h: 90, ports: { A: [0, 45], B: [100, 45], C: [50, 90] } },
   receiver: { label: "Acumulador", short: "ACUMULADOR", hint: "Pas d'aire; sense acumulació calculada", glyph: "▱", family: "supply", w: 200, h: 120, ports: { P: [0, 60], A: [200, 60] } },
   maintenance: { label: "Unitat de manteniment", short: "FILTRE · REGULADOR · LUBRICADOR", hint: "Passa l'aire; sense regulació física", glyph: "⚙", family: "supply", w: 260, h: 140, ports: { P: [0, 70], A: [260, 70] } },
   checkValve: { label: "Vàlvula antiretorn", short: "ANTIRETORN", hint: "Deixa passar l'aire en un sentit", glyph: "▷", family: "regulation", w: 220, h: 120, ports: { P: [0, 60], A: [220, 60] } },
@@ -27,11 +29,21 @@ const TYPES = {
   logicAnd: { label: "Vàlvula lògica AND", short: "AND", hint: "La sortida s'activa amb dues entrades", glyph: "∧", family: "logic", w: 220, h: 120, ports: { X: [0, 35], Y: [0, 85], A: [220, 60] } },
   timer3: { label: "Temporitzador pneumàtic 3/2", short: "TEMPORITZADOR", hint: "Retard qualitatiu a l'activació", glyph: "◷", family: "logic", w: 220, h: 140, ports: { P: [0, 70], A: [220, 70], R: [110, 140], X: [110, 0] } },
   single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", family: "actuators", w: 215, h: 140, ports: { A: [40, 140] } },
-  double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", family: "actuators", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } }
+  double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", family: "actuators", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } },
+  electricSource: { label: "Font elèctrica", short: "FONT ELÈCTRICA", hint: "Alimentació lògica, sense tensió calculada", glyph: "⏚", family: "electrical", w: 150, h: 100, ports: { plus: [150, 30], minus: [150, 70] } },
+  electricPush: { label: "Polsador elèctric NO", short: "POLSADOR NO", hint: "Tanca el contacte mentre es prem", glyph: "○", family: "electrical", w: 155, h: 100, ports: { "1": [0, 50], "2": [155, 50] } },
+  electricPushNC: { label: "Polsador elèctric NC", short: "POLSADOR NC", hint: "Obre el contacte mentre es prem", glyph: "○", family: "electrical", w: 155, h: 100, ports: { "1": [0, 50], "2": [155, 50] } },
+  electricSwitch: { label: "Interruptor elèctric", short: "INTERRUPTOR", hint: "Canvia entre obert i tancat", glyph: "I", family: "electrical", w: 155, h: 100, ports: { "1": [0, 50], "2": [155, 50] } },
+  electricLimit: { label: "Final de cursa elèctric", short: "FINAL ELÈCTRIC", hint: "Canvia amb la posició del cilindre", glyph: "FC", family: "electrical", w: 180, h: 100, ports: { "1": [0, 50], "2": [180, 50] } },
+  relayCoil: { label: "Bobina de relé", short: "RELÉ", hint: "Activa els contactes amb la mateixa referència", glyph: "K", family: "electrical", w: 160, h: 100, ports: { A1: [0, 35], A2: [0, 70] } },
+  relayContactNO: { label: "Contacte de relé NO", short: "RELÉ NO", hint: "Tanca quan s'activa el relé vinculat", glyph: "K", family: "electrical", w: 160, h: 100, ports: { "13": [0, 50], "14": [160, 50] } },
+  relayContactNC: { label: "Contacte de relé NC", short: "RELÉ NC", hint: "Obre quan s'activa el relé vinculat", glyph: "K", family: "electrical", w: 160, h: 100, ports: { "21": [0, 50], "22": [160, 50] } },
+  valve5Electric: { label: "Electrovàlvula 5/2 monoestable", short: "5/2 ELÈCTRICA", hint: "Bobina elèctrica i retorn per molla", glyph: "Y", family: "electrical", w: 290, h: 155, ports: { P: [155, 155], A: [145, 0], B: [170, 0], R: [135, 155], S: [175, 155], X1: [0, 55], X2: [0, 95] } }
 };
-const FAMILY_ORDER = ["supply", "valves", "actuators", "control", "regulation", "logic", "electrical"];
+const FAMILY_ORDER = ["supply", "connections", "valves", "actuators", "control", "regulation", "logic", "electrical"];
 const FAMILIES = {
   supply: "Alimentació i preparació de l'aire",
+  connections: "Unions i derivacions",
   valves: "Vàlvules distribuïdores",
   actuators: "Actuadors",
   control: "Accionaments i sensors",
@@ -41,6 +53,8 @@ const FAMILIES = {
 };
 const collapsedFamilies = new Set();
 const DISTRIBUTORS = new Set(["valve2", "valve3", "valve4", "valve5"]);
+const ELECTRICAL_TYPES = new Set(["electricSource", "electricPush", "electricPushNC", "electricSwitch", "electricLimit", "relayCoil", "relayContactNO", "relayContactNC"]);
+function isElectricalPort(type, portId) { return ELECTRICAL_TYPES.has(type) || (type === "valve5Electric" && (portId === "X1" || portId === "X2")); }
 const DEFAULT_ACTUATOR = { valve2: "pushbutton", valve3: "pushbutton", valve4: "lever", valve5: "pushbutton" };
 const defaultValveProperties = type => ({ actuator: DEFAULT_ACTUATOR[type], returnMode: type === "valve2" || type === "valve3" ? "spring" : "memory" });
 function defaultProperties(type) {
@@ -51,6 +65,9 @@ function defaultProperties(type) {
   if (type === "checkValve") return { direction: "PtoA" };
   if (type === "limitValve3") return { targetCylinder: "", targetEnd: "extended" };
   if (type === "timer3") return { delay: "medium" };
+  if (type === "relayCoil" || type === "relayContactNO" || type === "relayContactNC") return { relay: "K1" };
+  if (type === "note") return { text: "Escriu una nota" };
+  if (type === "electricLimit") return { targetCylinder: "", targetEnd: "extended" };
   return {};
 }
 function normalizeProperties(type, properties = {}) {
@@ -61,6 +78,9 @@ function normalizeProperties(type, properties = {}) {
   if (type === "valve53") return { center: "closed" };
   if (type === "limitValve3") return { targetCylinder: typeof properties.targetCylinder === "string" ? properties.targetCylinder : "", targetEnd: properties.targetEnd === "retracted" ? "retracted" : "extended" };
   if (type === "timer3") return { delay: ["short", "medium", "long"].includes(properties.delay) ? properties.delay : "medium" };
+  if (type === "relayCoil" || type === "relayContactNO" || type === "relayContactNC") return { relay: String(properties.relay || "K1").slice(0, 12) };
+  if (type === "note") return { text: String(properties.text || "Escriu una nota").slice(0, 120) };
+  if (type === "electricLimit") return { targetCylinder: typeof properties.targetCylinder === "string" ? properties.targetCylinder : "", targetEnd: properties.targetEnd === "retracted" ? "retracted" : "extended" };
   return {};
 }
 
@@ -99,9 +119,17 @@ let future = [];
 let dirty = false;
 let pointerAction = null;
 let activeMomentaryId = null;
+let panMode = false;
+let clipboardComponent = null;
+let cursorWorldPoint = null;
 
 function status(message) { $("statusText").textContent = message; }
 function snapshot() { return deepCopy(circuit); }
+function serializableCircuit() {
+  const data = snapshot(); data.format = FORMAT; data.version = VERSION;
+  data.connections = data.connections.map(w => ({ ...w, route: Array.isArray(w.route) ? w.route : [] }));
+  return data;
+}
 function remember() {
   history.push(snapshot());
   if (history.length > 50) history.shift();
@@ -110,7 +138,7 @@ function remember() {
 function storeBackup() {
   if (!$("backupToggle").checked) return;
   try {
-    localStorage.setItem(BACKUP_KEY, JSON.stringify(circuit));
+    localStorage.setItem(BACKUP_KEY, JSON.stringify(serializableCircuit()));
     $("restorePanel").hidden = true;
   } catch (_) { status("No s'ha pogut actualitzar la còpia local. Descarrega el JSON."); }
 }
@@ -125,12 +153,14 @@ function edit(action) {
 function resetRuntime() {
   for (const handle of timerHandles.values()) clearTimeout(handle);
   timerHandles.clear();
-  runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {} };
+  runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {}, relays: {}, electrical: {} };
   for (const component of circuit.components) {
     if (DISTRIBUTORS.has(component.type)) runtime.valves[component.id] = false;
     if (component.type === "valve53") runtime.valves[component.id] = "center";
     if (component.type === "valve5Pilot") runtime.valves[component.id] = false;
     if (component.type === "timer3") runtime.timers[component.id] = false;
+    if (component.type === "valve5Electric") runtime.valves[component.id] = false;
+    if (component.type === "electricSwitch") runtime.valves[component.id] = false;
     if (component.type === "single" || component.type === "double") runtime.cylinders[component.id] = "retracted";
   }
   simulation = null;
@@ -171,6 +201,24 @@ function deleteSelected() {
   });
   status("Element esborrat.");
 }
+function copySelected() {
+  if (running || selected?.kind !== "component") return;
+  const component = circuit.components.find(c => c.id === selected.id);
+  if (!component) return;
+  clipboardComponent = deepCopy(component);
+  $("pasteBtn").disabled = false;
+  status("Component copiat. Enganxa'l per crear-ne una còpia al llenç.");
+}
+function pasteSelected() {
+  if (running || !clipboardComponent || circuit.components.length >= MAX_COMPONENTS) return;
+  edit(() => {
+    const copy = deepCopy(clipboardComponent);
+    copy.id = makeId("c"); copy.x += 30; copy.y += 30;
+    clipboardComponent = deepCopy(copy);
+    circuit.components.push(copy); selected = { kind: "component", id: copy.id };
+  });
+  status("Còpia del component enganxada. Les connexions s'han de tornar a dibuixar.");
+}
 function undo() {
   if (running || !history.length) return;
   future.push(snapshot()); circuit = history.pop(); selected = null; pendingPort = null; dirty = true; storeBackup(); render(); status("Acció desfeta.");
@@ -185,18 +233,27 @@ function portUsed(componentId, portId) {
 function clickPort(componentId, portId) {
   if (running) return;
   const next = { componentId, portId };
-  if (!pendingPort) { pendingPort = next; status(`Port ${portId} triat. Clica un segon port.`); render(); return; }
+  if (!pendingPort) { pendingPort = { ...next, route: [] }; if (!cursorWorldPoint) cursorWorldPoint = { x: 600, y: 350 }; status(`Port ${portId} triat. Clica punts del recorregut, o usa les fletxes i Retorn; acaba en un port compatible.`); render(); return; }
   if (pendingPort.componentId === componentId && pendingPort.portId === portId) { pendingPort = null; render(); return; }
   if (pendingPort.componentId === componentId) { status("Connecta components diferents."); return; }
+  const fromType = circuit.components.find(c => c.id === pendingPort.componentId)?.type;
+  const toType = circuit.components.find(c => c.id === componentId)?.type;
+  if (isElectricalPort(fromType, pendingPort.portId) !== isElectricalPort(toType, portId)) { status("No es poden unir conductes pneumàtics i elèctrics."); return; }
   if (portUsed(pendingPort.componentId, pendingPort.portId) || portUsed(componentId, portId)) { status("Aquest port ja té una connexió."); return; }
   if (circuit.connections.length >= MAX_CONNECTIONS) { status("No es poden afegir més connexions."); return; }
-  const from = pendingPort;
-  edit(() => { circuit.connections.push({ id: makeId("w"), from, to: next }); pendingPort = null; });
-  status("Conducte connectat.");
+  const from = { componentId: pendingPort.componentId, portId: pendingPort.portId }, route = deepCopy(pendingPort.route || []);
+  edit(() => { circuit.connections.push({ id: makeId("w"), from, to: next, route }); pendingPort = null; });
+  status(isElectricalPort(toType, portId) ? "Cable elèctric connectat." : "Conducte connectat.");
+}
+function addRoutePoint(point) {
+  if (!pendingPort || running) return;
+  pendingPort.route.push({ x: Math.round(point.x), y: Math.round(point.y) });
+  status(`Punt de recorregut afegit (${pendingPort.route.length}). Acaba al port de destinació.`);
+  render();
 }
 
 function validateCircuit(data) {
-  if (!data || data.format !== FORMAT || data.version !== VERSION || !Array.isArray(data.components) || !Array.isArray(data.connections)) throw new Error("El fitxer no és un circuit THOSFLUID compatible.");
+  if (!data || data.format !== FORMAT || ![1, VERSION].includes(data.version) || !Array.isArray(data.components) || !Array.isArray(data.connections)) throw new Error("El fitxer no és un circuit THOSFLUID compatible.");
   if (data.components.length > MAX_COMPONENTS || data.connections.length > MAX_CONNECTIONS) throw new Error("El circuit supera el límit de components o connexions.");
   const ids = new Set();
   const used = new Set();
@@ -211,6 +268,7 @@ function validateCircuit(data) {
     for (const end of [w.from, w.to]) {
       const c = data.components.find(item => item.id === end.componentId);
       if (!c || !Object.hasOwn(TYPES[c.type].ports, end.portId)) throw new Error("Una connexió apunta a un port inexistent.");
+      if (isElectricalPort(data.components.find(item => item.id === w.from.componentId)?.type, w.from.portId) !== isElectricalPort(data.components.find(item => item.id === w.to.componentId)?.type, w.to.portId)) throw new Error("Una connexió barreja ports pneumàtics i elèctrics.");
       const portKey = key(end.componentId, end.portId);
       if (used.has(portKey)) throw new Error("Hi ha un port connectat més d'una vegada.");
       used.add(portKey);
@@ -219,10 +277,10 @@ function validateCircuit(data) {
   const name = String(data.metadata?.name || "Circuit nou").slice(0, 80);
   const zoom = Number.isFinite(data.view?.zoom) ? clamp(data.view.zoom, .55, 2.4) : 1;
   const pan = { x: Number.isFinite(data.view?.pan?.x) ? clamp(data.view.pan.x, -1500, 1500) : 0, y: Number.isFinite(data.view?.pan?.y) ? clamp(data.view.pan.y, -1000, 1000) : 0 };
-  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: normalizeProperties(c.type, c.properties) })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
+  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: normalizeProperties(c.type, c.properties) })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId }, route: Array.isArray(w.route) ? w.route.filter(p => Number.isFinite(p?.x) && Number.isFinite(p?.y) && Math.abs(p.x) <= 10000 && Math.abs(p.y) <= 10000).slice(0, 100).map(p => ({ x: p.x, y: p.y })) : [] })), view: { zoom, pan } };
 }
 function downloadCircuit() {
-  const text = JSON.stringify(circuit, null, 2);
+  const text = JSON.stringify(serializableCircuit(), null, 2);
   const blob = new Blob([text], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -256,7 +314,55 @@ function queueSimulationRefresh() {
   simulationRefreshPending = true;
   requestAnimationFrame(() => { simulationRefreshPending = false; if (running) render(); });
 }
+function buildElectricalSimulation() {
+  const relays = Object.create(null), energized = Object.create(null);
+  const nodes = [];
+  let plus = new Set(), minus = new Set(), graph = new Map();
+  for (const c of circuit.components) if (ELECTRICAL_TYPES.has(c.type) || c.type === "valve5Electric") {
+    for (const p of Object.keys(TYPES[c.type].ports).filter(portId => isElectricalPort(c.type, portId))) nodes.push(key(c.id, p));
+    if (c.type === "relayCoil") relays[c.properties?.relay || "K1"] = false;
+  }
+  const sources = circuit.components.filter(c => c.type === "electricSource");
+  const isPlus = id => sources.some(c => id === key(c.id, "plus"));
+  const isMinus = id => sources.some(c => id === key(c.id, "minus"));
+  let stable = false;
+  for (let pass = 0; pass < 8 && !stable; pass++) {
+    graph = new Map(nodes.map(node => [node, new Set()]));
+    const link = (a, b) => { if (graph.has(a) && graph.has(b)) { graph.get(a).add(b); graph.get(b).add(a); } };
+    for (const w of circuit.connections) {
+      const a = circuit.components.find(c => c.id === w.from.componentId), b = circuit.components.find(c => c.id === w.to.componentId);
+      if (a && b && isElectricalPort(a.type, w.from.portId) && isElectricalPort(b.type, w.to.portId)) link(key(a.id, w.from.portId), key(b.id, w.to.portId));
+    }
+    for (const c of circuit.components) {
+      if (c.type === "electricPush" && runtime.pressed[c.id]) link(key(c.id, "1"), key(c.id, "2"));
+      if (c.type === "electricPushNC" && !runtime.pressed[c.id]) link(key(c.id, "1"), key(c.id, "2"));
+      if (c.type === "electricSwitch" && runtime.valves[c.id]) link(key(c.id, "1"), key(c.id, "2"));
+      if (c.type === "electricLimit") { const target = targetCylinderFor(c); if (target && runtime.cylinders[target.id] === (c.properties?.targetEnd || "extended")) link(key(c.id, "1"), key(c.id, "2")); }
+      if (c.type === "relayContactNO" && relays[c.properties?.relay || "K1"]) link(key(c.id, "13"), key(c.id, "14"));
+      if (c.type === "relayContactNC" && !relays[c.properties?.relay || "K1"]) link(key(c.id, "21"), key(c.id, "22"));
+    }
+    const flood = seeds => { const seen = new Set(seeds), queue = [...seeds]; for (let i = 0; i < queue.length; i++) for (const next of graph.get(queue[i]) || []) if (!seen.has(next)) { seen.add(next); queue.push(next); } return seen; };
+    plus = flood(nodes.filter(isPlus)); minus = flood(nodes.filter(isMinus));
+    const nextRelays = Object.create(null);
+    for (const c of circuit.components) if (c.type === "relayCoil") nextRelays[c.properties?.relay || "K1"] = plus.has(key(c.id, "A1")) && minus.has(key(c.id, "A2"));
+    stable = Object.keys(nextRelays).every(name => nextRelays[name] === relays[name]);
+    Object.assign(relays, nextRelays);
+    for (const c of circuit.components) if (c.type === "valve5Electric") energized[c.id] = plus.has(key(c.id, "X1")) && minus.has(key(c.id, "X2"));
+  }
+  const activeWires = new Set();
+  for (const w of circuit.connections) {
+    const a = key(w.from.componentId, w.from.portId), b = key(w.to.componentId, w.to.portId);
+    if (plus.has(a) || plus.has(b) || minus.has(a) || minus.has(b)) activeWires.add(w.id);
+  }
+  return { relays, energized, activeWires, activePorts: new Set([...plus, ...minus]) };
+}
 function buildSimulation() {
+  const electrical = buildElectricalSimulation();
+  runtime.relays = electrical.relays;
+  runtime.electrical = electrical.energized;
+  for (const c of circuit.components) if (c.type === "valve5Electric") {
+    runtime.valves[c.id] = !!runtime.electrical[c.id];
+  }
   const graph = new Map(), reverseGraph = new Map();
   const ensure = id => { if (!graph.has(id)) graph.set(id, new Map()); if (!reverseGraph.has(id)) reverseGraph.set(id, new Map()); };
   const direct = (a, b, rate = 3) => { if (rate <= 0) return; ensure(a); ensure(b); graph.get(a).set(b, rate); reverseGraph.get(b).set(a, rate); };
@@ -264,9 +370,10 @@ function buildSimulation() {
   const linkRates = (a, b, ab, ba) => { direct(a, b, ab); direct(b, a, ba); };
   const pressureSeeds = [], exhaustSeeds = [];
   for (const c of circuit.components) {
-    for (const portId of Object.keys(TYPES[c.type].ports)) ensure(key(c.id, portId));
+    for (const portId of Object.keys(TYPES[c.type].ports)) if (!isElectricalPort(c.type, portId)) ensure(key(c.id, portId));
     const port = id => key(c.id, id);
     if (c.type === "source") pressureSeeds.push(port("P"));
+    if (c.type === "tee") { link(port("A"), port("B")); link(port("B"), port("C")); }
     if (c.type === "receiver" || c.type === "maintenance") link(port("P"), port("A"));
     if (c.type === "flowRegulator") link(port("P"), port("A"), ({ closed: 0, low: 1, medium: 2, open: 3 })[c.properties?.opening] ?? 3);
     if (c.type === "checkValve") c.properties?.direction === "AtoP" ? direct(port("A"), port("P")) : direct(port("P"), port("A"));
@@ -275,8 +382,8 @@ function buildSimulation() {
       if (c.properties?.regulatedDirection === "AtoP") linkRates(port("P"), port("A"), 3, rate);
       else linkRates(port("P"), port("A"), rate, 3);
     }
-    if (["valve3", "valve4", "valve5", "valve53", "valve5Pilot", "limitValve3", "timer3"].includes(c.type)) exhaustSeeds.push(port("R"));
-    if (["valve5", "valve53", "valve5Pilot"].includes(c.type)) exhaustSeeds.push(port("S"));
+    if (["valve3", "valve4", "valve5", "valve53", "valve5Pilot", "valve5Electric", "limitValve3", "timer3"].includes(c.type)) exhaustSeeds.push(port("R"));
+    if (["valve5", "valve53", "valve5Pilot", "valve5Electric"].includes(c.type)) exhaustSeeds.push(port("S"));
     const active = c.properties?.returnMode === "spring" ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
     if (c.type === "valve2" && active) link(port("P"), port("A"));
     if (c.type === "valve3") active ? link(port("P"), port("A")) : link(port("A"), port("R"));
@@ -284,8 +391,8 @@ function buildSimulation() {
       if (active) { link(port("P"), port("A")); link(port("B"), port("R")); }
       else { link(port("P"), port("B")); link(port("A"), port("R")); }
     }
-    if (c.type === "valve5" || c.type === "valve5Pilot") {
-      const pilotActive = c.type === "valve5Pilot" ? !!runtime.valves[c.id] : active;
+    if (c.type === "valve5" || c.type === "valve5Pilot" || c.type === "valve5Electric") {
+      const pilotActive = c.type === "valve5Pilot" || c.type === "valve5Electric" ? !!runtime.valves[c.id] : active;
       if (pilotActive) { link(port("P"), port("A")); link(port("B"), port("S")); }
       else { link(port("P"), port("B")); link(port("A"), port("R")); }
     }
@@ -302,7 +409,10 @@ function buildSimulation() {
       if (runtime.timers[c.id]) link(port("P"), port("A")); else link(port("A"), port("R"));
     }
   }
-  for (const w of circuit.connections) link(key(w.from.componentId, w.from.portId), key(w.to.componentId, w.to.portId));
+  for (const w of circuit.connections) {
+    const a = circuit.components.find(c => c.id === w.from.componentId), b = circuit.components.find(c => c.id === w.to.componentId);
+    if (a && b && !isElectricalPort(a.type, w.from.portId) && !isElectricalPort(b.type, w.to.portId)) link(key(w.from.componentId, w.from.portId), key(w.to.componentId, w.to.portId));
+  }
   const flood = (seeds, reverse = false) => {
     const adjacency = reverse ? reverseGraph : graph;
     const found = new Set(seeds), queue = [...seeds];
@@ -392,7 +502,7 @@ function buildSimulation() {
       timerHandles.set(c.id, setTimeout(() => { timerHandles.delete(c.id); if (running) { runtime.timers[c.id] = true; render(); } }, delay));
     }
   }
-  return { pressure, exhaust, conflicts, cylinderSpeeds, flowDirections };
+  return { pressure, exhaust, conflicts, cylinderSpeeds, flowDirections, activeWires: electrical.activeWires, activePorts: electrical.activePorts };
 }
 function portState(componentId, portId) {
   if (!running || !simulation) return "idle";
@@ -418,12 +528,14 @@ function renderWire(world, w) {
   const b = circuit.components.find(c => c.id === w.to.componentId);
   if (!a || !b) return;
   const start = pointOnComponent(a, w.from.portId), end = pointOnComponent(b, w.to.portId);
-  const mid = (start.x + end.x) / 2;
-  const state = portState(a.id, w.from.portId);
   const direction = simulation?.flowDirections?.[w.id];
-  const pathData = `M ${start.x} ${start.y} H ${mid} V ${end.y} H ${end.x}`;
+  const aComponent = circuit.components.find(c => c.id === w.from.componentId), bComponent = circuit.components.find(c => c.id === w.to.componentId);
+  const electrical = isElectricalPort(aComponent.type, w.from.portId);
+  const state = electrical ? (simulation?.activeWires?.has(w.id) ? "electric-active" : "idle") : portState(a.id, w.from.portId);
+  const pathData = [start, ...(w.route || []), end].map((p, index) => `${index ? "L" : "M"} ${p.x} ${p.y}`).join(" ");
   const flowClass = direction === "reverse" ? " flow-reverse" : direction === "forward" ? " flow-forward" : "";
-  const path = svg("path", { d: pathData, class: `wire ${state}${flowClass}${selected?.kind === "wire" && selected.id === w.id ? " selected" : ""}`, tabindex: running ? "-1" : "0", role: "button", "aria-label": `Conducte ${w.from.portId} a ${w.to.portId}: ${state === "pressure" ? "amb pressió" : state === "exhaust" ? "escapament" : "sense pressió"}${direction ? direction === "forward" ? "; flux cap al segon port" : "; flux cap al primer port" : ""}` }, world);
+  const electricState = simulation?.activeWires?.has(w.id) ? "electric-active" : "idle";
+  const path = svg("path", { d: pathData, class: `wire ${electrical ? electricState : state}${electrical ? " electrical-wire" : flowClass}${selected?.kind === "wire" && selected.id === w.id ? " selected" : ""}`, tabindex: running ? "-1" : "0", role: "button", "aria-label": `${electrical ? "Cable" : "Conducte"} ${w.from.portId} a ${w.to.portId}: ${electrical ? (electricState === "electric-active" ? "circuit actiu" : "circuit obert") : state === "pressure" ? "amb pressió" : state === "exhaust" ? "escapament" : "sense pressió"}${direction ? direction === "forward" ? "; flux cap al segon port" : "; flux cap al primer port" : ""}` }, world);
   path.addEventListener("click", e => { e.stopPropagation(); if (!running) { selected = { kind: "wire", id: w.id }; render(); } });
   path.addEventListener("keydown", e => { if (e.key === "Enter" && !running) { selected = { kind: "wire", id: w.id }; render(); } });
 }
@@ -454,6 +566,38 @@ function drawSymbol(group, c, previousCylinderState) {
     svg("line", { x1: 100, y1: 80, x2: 100, y2: 96, class: "symbol" }, group);
     svg("path", { d: "M92 96h16l-8 9z", class: "symbol" }, group);
     svgText(group, 100, 115, "acumulador", "sub", { "text-anchor": "middle" });
+  } else if (c.type === "note") {
+    svgText(group, 10, 36, c.properties?.text || "Escriu una nota", "note-text");
+  } else if (c.type === "electricSource") {
+    svg("line", { x1: 0, y1: 30, x2: 85, y2: 30, class: "norm-port-line" }, group); svg("line", { x1: 0, y1: 70, x2: 85, y2: 70, class: "norm-port-line" }, group);
+    svg("line", { x1: 48, y1: 17, x2: 48, y2: 43, class: "symbol" }, group); svg("line", { x1: 38, y1: 30, x2: 58, y2: 30, class: "symbol" }, group); svg("line", { x1: 42, y1: 70, x2: 54, y2: 70, class: "symbol" }, group);
+    svgText(group, 93, 34, "+", "sub"); svgText(group, 93, 74, "−", "sub");
+  } else if (["electricPush", "electricPushNC", "electricSwitch", "electricLimit"].includes(c.type)) {
+    svg("line", { x1: 0, y1: 50, x2: 55, y2: 50, class: "norm-port-line" }, group); svg("line", { x1: 100, y1: 50, x2: 155, y2: 50, class: "norm-port-line" }, group);
+    const momentary = c.type === "electricPush" || c.type === "electricPushNC";
+    const closed = c.type === "electricPush" ? !!runtime.pressed[c.id] : c.type === "electricPushNC" ? !runtime.pressed[c.id] : c.type === "electricSwitch" ? !!runtime.valves[c.id] : !!targetCylinderFor(c) && runtime.cylinders[targetCylinderFor(c).id] === (c.properties?.targetEnd || "extended");
+    svg("circle", { cx: 65, cy: 50, r: 3, class: "symbol-fill" }, group); svg("circle", { cx: 90, cy: 50, r: 3, class: "symbol-fill" }, group);
+    svg("line", { x1: 66, y1: 50, x2: closed ? 89 : 80, y2: closed ? 50 : 35, class: "symbol" }, group);
+    if (momentary || c.type === "electricLimit") { svg("line", { x1: 73, y1: 20, x2: 83, y2: 20, class: "symbol" }, group); svg("line", { x1: 78, y1: 20, x2: 78, y2: 32, class: "symbol" }, group); }
+    if (momentary || c.type === "electricSwitch") {
+      const button = svg("rect", { x: 55, y: 17, width: 47, height: 44, rx: 4, class: `actuator${closed ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": momentary ? "Mantén premut el polsador elèctric" : "Commuta l'interruptor elèctric" }, group);
+      const trigger = e => { e.stopPropagation(); if (!running) return; if (momentary && activeMomentaryId !== c.id) { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } else if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; render(); };
+      const release = e => { e.stopPropagation(); if (activeMomentaryId === c.id) releaseMomentary(); };
+      button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
+      button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); trigger(e); } }); button.addEventListener("keyup", release);
+    }
+  } else if (["relayCoil", "relayContactNO", "relayContactNC"].includes(c.type)) {
+    if (c.type === "relayCoil") { svg("path", { d: "M40 28q-15 22 0 44 M85 28q15 22 0 44 M40 28h45 M40 72h45", class: "symbol" }, group); svgText(group, 100, 55, c.properties?.relay || "K1", "sub"); }
+    else { const nc = c.type === "relayContactNC", left = nc ? "21" : "13", right = nc ? "22" : "14", x1 = nc ? 53 : 53; svg("line", { x1: 0, y1: 50, x2: 52, y2: 50, class: "norm-port-line" }, group); svg("line", { x1: 108, y1: 50, x2: 160, y2: 50, class: "norm-port-line" }, group); const on = !!runtime.relays[c.properties?.relay || "K1"], closed = nc ? !on : on; svg("line", { x1, y1: 50, x2: closed ? 107 : 95, y2: closed ? 50 : 35, class: "symbol" }, group); svgText(group, 80, 84, `${c.properties?.relay || "K1"} ${nc ? "NC" : "NO"}`, "sub", { "text-anchor": "middle" }); }
+  } else if (c.type === "valve5Electric") {
+    const on = !!runtime.electrical[c.id];
+    svg("rect", { x: 50, y: 42, width: 60, height: 60, class: `norm-box${on ? " norm-active" : ""}` }, group); svg("rect", { x: 110, y: 42, width: 60, height: 60, class: `norm-box${on ? "" : " norm-active"}` }, group);
+    symbolArrow(group, 65, 91, 75, 53); symbolArrow(group, 80, 53, 85, 91); symbolArrow(group, 145, 91, 155, 53); symbolArrow(group, 135, 53, 125, 91);
+    for (const x of [145, 170]) svg("line", { x1: x, y1: 0, x2: x, y2: 42, class: "norm-port-line" }, group); for (const x of [135, 155, 175]) svg("line", { x1: x, y1: 102, x2: x, y2: 155, class: "norm-port-line" }, group);
+    svg("path", { d: "M25 55h15l8 8-8 8h-15 M25 95h15l8-8-8-8h-15", class: "symbol" }, group); svgText(group, 22, 52, "Y1", "sub");
+  } else if (c.type === "tee") {
+    svg("path", { d: "M0 45H100 M50 45V90", class: "norm-port-line" }, group);
+    svg("circle", { cx: 50, cy: 45, r: 4, class: "symbol-fill" }, group);
   } else if (c.type === "maintenance") {
     svg("line", { x1: 0, y1: 70, x2: 26, y2: 70, class: "norm-port-line" }, group);
     svg("line", { x1: 234, y1: 70, x2: 260, y2: 70, class: "norm-port-line" }, group);
@@ -587,7 +731,7 @@ function drawSymbol(group, c, previousCylinderState) {
     button.addEventListener("pointercancel", release);
     button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); trigger(e); } });
     button.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter") release(e); });
-  } else {
+  } else if (c.type === "single" || c.type === "double") {
     svg("rect", { x: 20, y: 38, width: 130, height: 57, class: "norm-box" }, group);
     const extended = runtime.cylinders[c.id] === "extended";
     const pistonX = extended ? 112 : 56;
@@ -610,12 +754,13 @@ function drawSymbol(group, c, previousCylinderState) {
 }
 function renderComponent(world, c, previousCylinderState) {
   const def = TYPES[c.type];
-  const group = svg("g", { transform: `translate(${c.x} ${c.y})`, class: `component${selected?.kind === "component" && selected.id === c.id ? " selected" : ""}`, role: "button", tabindex: "0", "aria-label": `${def.label}: ${c.id}` }, world);
+  const group = svg("g", { transform: `translate(${c.x} ${c.y})`, class: `component${c.type === "note" ? " annotation" : ""}${selected?.kind === "component" && selected.id === c.id ? " selected" : ""}`, role: "button", tabindex: "0", "aria-label": `${def.label}: ${c.id}` }, world);
   svg("rect", { x: 0, y: 0, width: def.w, height: def.h, rx: 10, class: "body" }, group);
   svgText(group, c.type === "source" ? 8 : 20, c.type === "source" ? 88 : 20, def.short, "label");
   drawSymbol(group, c, previousCylinderState);
   group.addEventListener("pointerdown", e => {
     if (e.target.classList.contains("port") || e.target.classList.contains("actuator")) return;
+    if (panMode) return;
     e.stopPropagation(); selected = { kind: "component", id: c.id };
     if (!running) { remember(); pointerAction = { kind: "move", id: c.id, start: screenPoint(e), x: c.x, y: c.y, moved: false }; $("circuitCanvas").setPointerCapture(e.pointerId); }
     renderInspector();
@@ -625,9 +770,10 @@ function renderComponent(world, c, previousCylinderState) {
     e.preventDefault(); selected = { kind: "component", id: c.id }; renderInspector();
   });
   for (const [portId, [x, y]] of Object.entries(def.ports)) {
-    const circle = svg("circle", { cx: x, cy: y, r: 7, class: `port${pendingPort?.componentId === c.id && pendingPort?.portId === portId ? " pending" : ""}`, role: "button", tabindex: running ? "-1" : "0", "aria-label": `Port ${portId} de ${def.label}` }, group);
+    const electricActive = simulation?.activePorts?.has(key(c.id, portId));
+    const circle = svg("circle", { cx: x, cy: y, r: 7, class: `port${isElectricalPort(c.type, portId) ? " electric-port" : ""}${electricActive ? " active" : ""}${pendingPort?.componentId === c.id && pendingPort?.portId === portId ? " pending" : ""}`, role: "button", tabindex: running ? "-1" : "0", "aria-label": `Port ${portId} de ${def.label}${isElectricalPort(c.type, portId) ? electricActive ? ", circuit elèctric actiu" : ", circuit elèctric obert" : ""}` }, group);
     svgText(group, x >= def.w ? x - 12 : x, y < 20 ? 31 : y > def.h - 15 ? def.h - 24 : y - 13, portId, "port-label", { "text-anchor": x >= def.w ? "end" : "middle" });
-    circle.addEventListener("pointerdown", e => { e.stopPropagation(); clickPort(c.id, portId); });
+    circle.addEventListener("pointerdown", e => { if (panMode) return; e.stopPropagation(); clickPort(c.id, portId); });
     circle.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); clickPort(c.id, portId); } });
   }
 }
@@ -645,10 +791,18 @@ function renderInspector() {
   $("circuitCount").textContent = `${circuit.components.length} ${circuit.components.length === 1 ? "component" : "components"} · ${circuit.connections.length} ${circuit.connections.length === 1 ? "conducte" : "conductes"}`;
   $("componentInspector").hidden = !selected;
   if (!selected) return;
-  if (selected.kind === "wire") { $("inspectorTitle").textContent = "Conducte"; const p = document.createElement("p"); p.textContent = "Uneix dos ports pneumàtics."; panel.append(p); return; }
+  if (selected.kind === "wire") { $("inspectorTitle").textContent = "Connexió"; const p = document.createElement("p"); p.textContent = "Pots seleccionar punts intermedis quan dibuixes la connexió. El recorregut queda desat al fitxer JSON."; panel.append(p); return; }
   const c = circuit.components.find(x => x.id === selected.id); if (!c) { $("componentInspector").hidden = true; return; }
   $("inspectorTitle").textContent = TYPES[c.type].label;
-  for (const portId of Object.keys(TYPES[c.type].ports)) { const pill = document.createElement("span"); pill.className = "pill"; pill.textContent = `${portId}: ${portState(c.id, portId) === "pressure" ? "pressió" : portState(c.id, portId) === "exhaust" ? "escapament" : "sense pressió"}`; panel.append(pill); }
+  for (const portId of Object.keys(TYPES[c.type].ports)) { const pill = document.createElement("span"); pill.className = "pill"; const state = isElectricalPort(c.type, portId) ? simulation?.activePorts?.has(key(c.id, portId)) ? "circuit actiu" : "circuit obert" : portState(c.id, portId) === "pressure" ? "pressió" : portState(c.id, portId) === "exhaust" ? "escapament" : "sense pressió"; pill.textContent = `${portId}: ${state}`; panel.append(pill); }
+  if (c.type === "note") {
+    const label = document.createElement("label"); label.className = "field-label"; label.htmlFor = "noteText"; label.textContent = "Text de l'anotació"; panel.append(label);
+    const input = document.createElement("textarea"); input.id = "noteText"; input.className = "text-field"; input.maxLength = 120; input.value = c.properties.text || ""; input.disabled = running; input.addEventListener("change", () => edit(() => { c.properties.text = input.value.trim().slice(0, 120) || "Nota"; })); panel.append(input);
+  }
+  if (!running && ["relayCoil", "relayContactNO", "relayContactNC"].includes(c.type)) {
+    const label = document.createElement("label"); label.className = "field-label"; label.htmlFor = "relayName"; label.textContent = "Referència del relé"; panel.append(label);
+    const input = document.createElement("input"); input.id = "relayName"; input.className = "text-field"; input.maxLength = 12; input.value = c.properties.relay || "K1"; input.addEventListener("change", () => edit(() => { c.properties.relay = input.value.trim().slice(0, 12) || "K1"; })); panel.append(input);
+  }
   if (c.type === "single" || c.type === "double") { const p = document.createElement("p"); p.textContent = `Èmbol: ${runtime.cylinders[c.id] === "extended" ? "estès" : "retret"}`; panel.append(p); }
   if (DISTRIBUTORS.has(c.type) && !running) {
     const actuatorLabel = document.createElement("label"); actuatorLabel.className = "field-label"; actuatorLabel.textContent = "Accionament"; actuatorLabel.htmlFor = "actuatorMode"; panel.append(actuatorLabel);
@@ -682,6 +836,11 @@ function renderInspector() {
     addSelect("limitEnd", "Extrem d'accionament", [["extended", "Estès"], ["retracted", "Retret"]], c.properties.targetEnd || "extended", value => edit(() => { c.properties.targetEnd = value; }));
   }
   if (!running && c.type === "timer3") addSelect("timerDelay", "Retard qualitatiu", [["short", "Curt"], ["medium", "Mitjà"], ["long", "Llarg"]], c.properties.delay || "medium", value => edit(() => { c.properties.delay = value; }));
+  if (!running && c.type === "electricLimit") {
+    const cylinders = circuit.components.filter(isCylinder);
+    addSelect("electricLimitCylinder", "Cilindre supervisat", [["", "Primer cilindre"], ...cylinders.map((item, index) => [item.id, `Cilindre ${index + 1}`])], c.properties.targetCylinder || "", value => edit(() => { c.properties.targetCylinder = value; }));
+    addSelect("electricLimitEnd", "Extrem d'accionament", [["extended", "Estès"], ["retracted", "Retret"]], c.properties.targetEnd || "extended", value => edit(() => { c.properties.targetEnd = value; }));
+  }
   if (running && c.type === "valve53") {
     const label = document.createElement("p"); label.textContent = "Tria la posició del distribuïdor."; panel.append(label);
     for (const [position, text] of [["left", "Posició A"], ["center", "Centre tancat"], ["right", "Posició B"]]) {
@@ -692,6 +851,7 @@ function renderInspector() {
   if (running && c.type === "limitValve3") { const target = targetCylinderFor(c); const p = document.createElement("p"); p.textContent = `Final mecànic ${target && runtime.cylinders[target.id] === (c.properties.targetEnd || "extended") ? "accionat" : "en repòs"}.`; panel.append(p); }
   if (running && c.type === "timer3") { const p = document.createElement("p"); p.textContent = runtime.timers[c.id] ? "Retard completat; sortida activa." : timerHandles.has(c.id) ? "Retard en curs." : "En espera de senyal a X."; panel.append(p); }
   if (running && c.type === "valve5Pilot") { const p = document.createElement("p"); p.textContent = `Posició ${runtime.valves[c.id] ? "P–A / B–S" : "P–B / A–R"}. X commuta cap a A; Y commuta cap a B.`; panel.append(p); }
+  if (running && c.type === "valve5Electric") { const p = document.createElement("p"); p.textContent = runtime.electrical[c.id] ? "Bobina energitzada; posició P–A / B–S." : "Bobina desenergitzada; retorn per molla a P–B / A–R."; panel.append(p); }
   if (running && DISTRIBUTORS.has(c.type)) {
     const button = document.createElement("button"); button.className = "secondary wide";
     const properties = { ...defaultValveProperties(c.type), ...c.properties };
@@ -713,15 +873,24 @@ function render() {
   simulation = running ? buildSimulation() : null;
   const world = $("world"); world.replaceChildren();
   world.setAttribute("transform", `translate(${circuit.view.pan.x} ${circuit.view.pan.y}) scale(${circuit.view.zoom})`);
+  $("circuitCanvas").classList.toggle("pan", panMode);
   for (const wire of circuit.connections) renderWire(world, wire);
   for (const comp of circuit.components) renderComponent(world, comp, previousCylinderStates[comp.id]);
+  if (pendingPort && cursorWorldPoint) {
+    const source = circuit.components.find(c => c.id === pendingPort.componentId);
+    if (source) { const points = [pointOnComponent(source, pendingPort.portId), ...(pendingPort.route || []), cursorWorldPoint]; svg("path", { d: points.map((p, i) => `${i ? "L" : "M"} ${p.x} ${p.y}`).join(" "), class: "wire preview-wire" }, world); }
+  }
   $("circuitName").value = circuit.metadata.name;
   $("circuitName").disabled = running;
   $("simulateBtn").textContent = running ? "■ Edita" : "▶ Simula";
   $("modeLabel").textContent = running ? "Mode simulació" : "Mode edició";
-  $("canvasHint").textContent = running ? "Acciona una vàlvula i observa com es desplaça l'aire pels conductes." : "Clica dos ports per connectar-los.";
+  $("canvasHint").textContent = running ? "Acciona els comandaments i observa l'aire i els senyals elèctrics." : pendingPort ? "Clica per afegir girs; amb teclat usa fletxes i Retorn. Acaba en un port compatible." : panMode ? "Arrossega el llenç per moure la vista." : "Clica dos ports per connectar-los; afegeix girs amb clics al llenç.";
   $("resetBtn").disabled = !running;
   $("deleteBtn").disabled = running || !selected;
+  $("copyBtn").disabled = running || selected?.kind !== "component";
+  $("pasteBtn").disabled = running || !clipboardComponent;
+  $("panBtn").setAttribute("aria-pressed", String(panMode));
+  $("panBtn").classList.toggle("active-tool", panMode);
   $("undoBtn").disabled = running || !history.length;
   $("redoBtn").disabled = running || !future.length;
   $("zoomLabel").textContent = `${Math.round(circuit.view.zoom * 100)}%`;
@@ -760,6 +929,89 @@ function loadExample(kind) {
     selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
     status("Exemple de regulador carregat en obertura «poc». Simula'l i acciona la vàlvula.");
     return;
+  }
+  if (kind === "branch") {
+    const source = { id: "font", type: "source", x: 100, y: 300, properties: {} };
+    const valve = { id: "valvula", type: "valve3", x: 365, y: 255, properties: defaultValveProperties("valve3") };
+    const tee = { id: "derivacio", type: "tee", x: 700, y: 275, properties: {} };
+    const cylinderA = { id: "cilindre_a", type: "single", x: 930, y: 125, properties: {} };
+    const cylinderB = { id: "cilindre_b", type: "single", x: 930, y: 435, properties: {} };
+    circuit = { format: FORMAT, version: VERSION, metadata: { name: "Exemple: derivació en T i dos cilindres" }, components: [source, valve, tee, cylinderA, cylinderB], connections: [
+      { id: "aire_font", from: { componentId: source.id, portId: "P" }, to: { componentId: valve.id, portId: "P" } },
+      { id: "aire_valvula", from: { componentId: valve.id, portId: "A" }, to: { componentId: tee.id, portId: "A" } },
+      { id: "branca_a", from: { componentId: tee.id, portId: "B" }, to: { componentId: cylinderA.id, portId: "A" } },
+      { id: "branca_b", from: { componentId: tee.id, portId: "C" }, to: { componentId: cylinderB.id, portId: "A" } }
+    ], view: { zoom: .82, pan: { x: 55, y: 12 } } };
+    selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
+    status("Exemple de derivació carregat. En prémer la 3/2, l'aire arriba als dos cilindres.");
+    return;
+  }
+  if (kind === "electric") {
+    const air = { id: "font_aire", type: "source", x: 80, y: 390, properties: {} };
+    const electrical = { id: "font_electrica", type: "electricSource", x: 80, y: 130, properties: {} };
+    const push = { id: "polsador", type: "electricPush", x: 330, y: 130, properties: {} };
+    const valve = { id: "electrovalvula", type: "valve5Electric", x: 600, y: 335, properties: defaultProperties("valve5Electric") };
+    const cylinder = { id: "cilindre", type: "double", x: 940, y: 340, properties: {} };
+    circuit = { format: FORMAT, version: VERSION, metadata: { name: "Exemple: polsador elèctric i electrovàlvula 5/2" }, components: [air, electrical, push, valve, cylinder], connections: [
+      { id: "aire_p", from: { componentId: air.id, portId: "P" }, to: { componentId: valve.id, portId: "P" }, route: [] },
+      { id: "aire_a", from: { componentId: valve.id, portId: "A" }, to: { componentId: cylinder.id, portId: "A" }, route: [] },
+      { id: "aire_b", from: { componentId: valve.id, portId: "B" }, to: { componentId: cylinder.id, portId: "B" }, route: [] },
+      { id: "el_plus", from: { componentId: electrical.id, portId: "plus" }, to: { componentId: push.id, portId: "1" }, route: [{ x: 270, y: 160 }] },
+      { id: "el_ordre", from: { componentId: push.id, portId: "2" }, to: { componentId: valve.id, portId: "X1" }, route: [{ x: 525, y: 180 }, { x: 525, y: 390 }] },
+      { id: "el_retor", from: { componentId: valve.id, portId: "X2" }, to: { componentId: electrical.id, portId: "minus" }, route: [{ x: 520, y: 430 }, { x: 260, y: 200 }] }
+    ], view: { zoom: .86, pan: { x: 35, y: 15 } } };
+    selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
+    status("Exemple d'electroneumàtica carregat. Simula'l i mantén premut el polsador elèctric.");
+    return;
+  }
+  if (kind === "limit") {
+    const source = { id: "font", type: "source", x: 70, y: 310, properties: {} };
+    const tee = { id: "derivacio", type: "tee", x: 270, y: 315, properties: {} };
+    const start = { id: "ordre_inicial", type: "valve3", x: 440, y: 175, properties: defaultValveProperties("valve3") };
+    const limit = { id: "final_cursa", type: "limitValve3", x: 440, y: 420, properties: { targetCylinder: "cilindre_a", targetEnd: "extended" } };
+    const cylinderA = { id: "cilindre_a", type: "single", x: 760, y: 130, properties: {} };
+    const cylinderB = { id: "cilindre_b", type: "single", x: 760, y: 430, properties: {} };
+    circuit = { format: FORMAT, version: VERSION, metadata: { name: "Exemple: final de cursa mecànic" }, components: [source, tee, start, limit, cylinderA, cylinderB], connections: [
+      { id: "font_derivacio", from: { componentId: source.id, portId: "P" }, to: { componentId: tee.id, portId: "A" }, route: [] },
+      { id: "alimentacio_inicial", from: { componentId: tee.id, portId: "B" }, to: { componentId: start.id, portId: "P" }, route: [] },
+      { id: "alimentacio_final", from: { componentId: tee.id, portId: "C" }, to: { componentId: limit.id, portId: "P" }, route: [] },
+      { id: "cilindre_inicial", from: { componentId: start.id, portId: "A" }, to: { componentId: cylinderA.id, portId: "A" }, route: [] },
+      { id: "sortida_final", from: { componentId: limit.id, portId: "A" }, to: { componentId: cylinderB.id, portId: "A" }, route: [] }
+    ], view: { zoom: .82, pan: { x: 50, y: 25 } } };
+    selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
+    status("Exemple de final de cursa carregat. Acciona la 3/2; quan el primer cilindre arribi al final, s'activarà el segon."); return;
+  }
+  if (kind === "timer") {
+    const source = { id: "font", type: "source", x: 70, y: 300, properties: {} };
+    const tee = { id: "derivacio", type: "tee", x: 280, y: 315, properties: {} };
+    const timer = { id: "temporitzador", type: "timer3", x: 510, y: 285, properties: { delay: "medium" } };
+    const cylinder = { id: "cilindre", type: "single", x: 850, y: 290, properties: {} };
+    circuit = { format: FORMAT, version: VERSION, metadata: { name: "Exemple: temporitzador pneumàtic" }, components: [source, tee, timer, cylinder], connections: [
+      { id: "font_derivacio", from: { componentId: source.id, portId: "P" }, to: { componentId: tee.id, portId: "A" }, route: [] },
+      { id: "pressio_temporitzador", from: { componentId: tee.id, portId: "B" }, to: { componentId: timer.id, portId: "P" }, route: [] },
+      { id: "senyal_temporitzador", from: { componentId: tee.id, portId: "C" }, to: { componentId: timer.id, portId: "X" }, route: [] },
+      { id: "sortida_cilindre", from: { componentId: timer.id, portId: "A" }, to: { componentId: cylinder.id, portId: "A" }, route: [] }
+    ], view: { zoom: .86, pan: { x: 30, y: 10 } } };
+    selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
+    status("Exemple de temporitzador carregat. Simula'l i observa el retard qualitatiu."); return;
+  }
+  if (kind === "logic") {
+    const source = { id: "font", type: "source", x: 50, y: 280, properties: {} };
+    const input = { id: "derivacio_entrades", type: "tee", x: 230, y: 285, properties: {} };
+    const logic = { id: "and", type: "logicAnd", x: 430, y: 250, properties: {} };
+    const output = { id: "derivacio_sortides", type: "tee", x: 740, y: 270, properties: {} };
+    const cylinderA = { id: "cilindre_a", type: "single", x: 970, y: 130, properties: {} };
+    const cylinderB = { id: "cilindre_b", type: "single", x: 970, y: 430, properties: {} };
+    circuit = { format: FORMAT, version: VERSION, metadata: { name: "Exemple: vàlvula lògica AND" }, components: [source, input, logic, output, cylinderA, cylinderB], connections: [
+      { id: "font_entrades", from: { componentId: source.id, portId: "P" }, to: { componentId: input.id, portId: "A" }, route: [] },
+      { id: "entrada_x", from: { componentId: input.id, portId: "B" }, to: { componentId: logic.id, portId: "X" }, route: [] },
+      { id: "entrada_y", from: { componentId: input.id, portId: "C" }, to: { componentId: logic.id, portId: "Y" }, route: [] },
+      { id: "sortida_logica", from: { componentId: logic.id, portId: "A" }, to: { componentId: output.id, portId: "A" }, route: [] },
+      { id: "sortida_a", from: { componentId: output.id, portId: "B" }, to: { componentId: cylinderA.id, portId: "A" }, route: [] },
+      { id: "sortida_b", from: { componentId: output.id, portId: "C" }, to: { componentId: cylinderB.id, portId: "A" }, route: [] }
+    ], view: { zoom: .8, pan: { x: 30, y: 15 } } };
+    selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
+    status("Exemple de vàlvula AND carregat. Prova també d'obrir una entrada per comparar-ho amb OR."); return;
   }
   const is2 = kind === "twoTwo", is3 = kind === "simple", is4 = kind === "fourTwo";
   const single = is2 || is3;
@@ -817,10 +1069,21 @@ function setupLibrary() {
 }
 function setupCanvas() {
   const canvas = $("circuitCanvas");
+  canvas.addEventListener("keydown", e => {
+    if (running || !pendingPort) return;
+    const directions = { ArrowLeft: [-10, 0], ArrowRight: [10, 0], ArrowUp: [0, -10], ArrowDown: [0, 10] };
+    if (directions[e.key]) { e.preventDefault(); const [dx, dy] = directions[e.key]; cursorWorldPoint = { x: (cursorWorldPoint?.x ?? 600) + dx, y: (cursorWorldPoint?.y ?? 350) + dy }; render(); }
+    else if (e.key === "Enter") { e.preventDefault(); addRoutePoint(cursorWorldPoint || { x: 600, y: 350 }); }
+  });
   canvas.addEventListener("pointerdown", e => {
-    if (!e.target.hasAttribute("data-background")) return;
     if (running) { selected = null; renderInspector(); return; }
     const p = worldPoint(e);
+    if (panMode) {
+      pointerAction = { kind: "pan", start: screenPoint(e), x: circuit.view.pan.x, y: circuit.view.pan.y };
+      canvas.setPointerCapture(e.pointerId); canvas.classList.add("dragging"); return;
+    }
+    if (!e.target.hasAttribute("data-background")) return;
+    if (pendingPort) { addRoutePoint(p); return; }
     if (selectedType) { addComponent(selectedType, p.x - TYPES[selectedType].w / 2, p.y - TYPES[selectedType].h / 2); return; }
     selected = null; renderInspector();
     pointerAction = { kind: "pan", start: screenPoint(e), x: circuit.view.pan.x, y: circuit.view.pan.y };
@@ -828,7 +1091,8 @@ function setupCanvas() {
     canvas.classList.add("dragging");
   });
   canvas.addEventListener("pointermove", e => {
-    if (!pointerAction) return;
+    cursorWorldPoint = worldPoint(e);
+    if (!pointerAction) { if (pendingPort) render(); return; }
     const p = screenPoint(e), dx = p.x - pointerAction.start.x, dy = p.y - pointerAction.start.y;
     if (pointerAction.kind === "pan") { circuit.view.pan = { x: pointerAction.x + dx, y: pointerAction.y + dy }; render(); }
     if (pointerAction.kind === "move") {
@@ -883,6 +1147,10 @@ function setupControls() {
   handle.addEventListener("pointerup", () => { panelDrag = null; });
   handle.addEventListener("pointercancel", () => { panelDrag = null; });
   $("deleteBtn").addEventListener("click", deleteSelected);
+  $("panBtn").addEventListener("click", () => { panMode = !panMode; pendingPort = null; selectedType = null; render(); status(panMode ? "Eina PAN activada: arrossega el llenç." : "Eina PAN desactivada."); });
+  $("textBtn").addEventListener("click", () => { panMode = false; selectedType = selectedType === "note" ? null : "note"; render(); status(selectedType ? "Clica al llenç per afegir una anotació; edita'n el text al panell." : "Eina de text cancel·lada."); });
+  $("copyBtn").addEventListener("click", copySelected);
+  $("pasteBtn").addEventListener("click", pasteSelected);
   $("undoBtn").addEventListener("click", undo);
   $("redoBtn").addEventListener("click", redo);
   $("simulateBtn").addEventListener("click", () => setRunning(!running));
@@ -892,10 +1160,15 @@ function setupControls() {
   $("fitBtn").addEventListener("click", () => { circuit.view = { zoom: 1, pan: { x: 0, y: 0 } }; render(); });
   $("exampleSupplyBtn").addEventListener("click", () => loadExample("supply"));
   $("exampleFlowBtn").addEventListener("click", () => loadExample("flow"));
+  $("exampleBranchBtn").addEventListener("click", () => loadExample("branch"));
   $("exampleValve2Btn").addEventListener("click", () => loadExample("twoTwo"));
   $("exampleSimpleBtn").addEventListener("click", () => loadExample("simple"));
   $("exampleValve4Btn").addEventListener("click", () => loadExample("fourTwo"));
   $("exampleDoubleBtn").addEventListener("click", () => loadExample("double"));
+  $("exampleLimitBtn").addEventListener("click", () => loadExample("limit"));
+  $("exampleLogicBtn").addEventListener("click", () => loadExample("logic"));
+  $("exampleTimerBtn").addEventListener("click", () => loadExample("timer"));
+  $("exampleElectricBtn").addEventListener("click", () => loadExample("electric"));
   $("circuitName").addEventListener("change", e => { const value = e.target.value.trim().slice(0, 80) || "Circuit nou"; if (value !== circuit.metadata.name && !running) edit(() => { circuit.metadata.name = value; }); });
   $("backupToggle").addEventListener("change", e => {
     try {
@@ -916,8 +1189,10 @@ function setupControls() {
     if (typing) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") { e.preventDefault(); copySelected(); }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") { e.preventDefault(); pasteSelected(); }
     if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelected(); }
-    if (e.key === "Escape") { pendingPort = null; selectedType = null; render(); }
+    if (e.key === "Escape") { pendingPort = null; selectedType = null; panMode = false; render(); }
   });
   window.addEventListener("beforeunload", e => { if (!dirty) return; e.preventDefault(); e.returnValue = ""; });
 }
