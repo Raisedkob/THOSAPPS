@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THOSFLUID — Simulador pneumàtic</title>
-  <link rel="stylesheet" href="thosfluid/app.css?v=20260929-editor-cachefix-7">
-  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-editor-cachefix-7">
-  <script src="thosfluid/app.js?v=20260929-editor-cachefix-7" defer></script>
+  <link rel="stylesheet" href="thosfluid/app.css?v=20260929-editor-cachefix-8">
+  <link rel="stylesheet" href="thosfluid/refinements.css?v=20260929-editor-cachefix-8">
+  <script src="thosfluid/app.js?v=20260929-editor-cachefix-8" defer></script>
 </head>
 <body>
   <div class="app">
@@ -33,6 +33,8 @@
         </div>
         <div class="toolgroup" aria-label="Simulació">
           <button id="simulateBtn" class="primary tool-button" aria-label="Inicia la simulació" title="Inicia la simulació"><svg id="simulateIcon" class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 4 14 8-14 8z"/></svg><span id="simulateLabel" class="tool-label">Simula</span></button>
+          <button id="stepModeBtn" class="tool-button" aria-label="Activa o desactiva el mode pas a pas" aria-pressed="false" title="Activa el mode pas a pas"><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span class="tool-label">Pas a pas</span></button>
+          <button id="stepBtn" class="tool-button" aria-label="Avança un pas de simulació" title="Avança un pas de simulació" disabled><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 4 12 8-12 8zM21 5v14"/></svg><span class="tool-label">Avança</span></button>
           <button id="resetBtn" class="tool-button" aria-label="Reinicia la simulació" title="Reinicia la simulació" disabled><svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span class="tool-label">Reinicia</span></button>
         </div>
         <div class="toolgroup" aria-label="Vista">
