@@ -13,11 +13,19 @@ const TYPES = {
   source: { label: "Font d'aire", short: "FONT", hint: "Equivalent al compressor", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
   receiver: { label: "Acumulador", short: "ACUMULADOR", hint: "Pas d'aire; sense acumulació calculada", glyph: "▱", family: "supply", w: 200, h: 120, ports: { P: [0, 60], A: [200, 60] } },
   maintenance: { label: "Unitat de manteniment", short: "FILTRE · REGULADOR · LUBRICADOR", hint: "Passa l'aire; sense regulació física", glyph: "⚙", family: "supply", w: 260, h: 140, ports: { P: [0, 70], A: [260, 70] } },
+  checkValve: { label: "Vàlvula antiretorn", short: "ANTIRETORN", hint: "Deixa passar l'aire en un sentit", glyph: "▷", family: "regulation", w: 220, h: 120, ports: { P: [0, 60], A: [220, 60] } },
   flowRegulator: { label: "Regulador de cabal", short: "REGULADOR", hint: "Pas qualitatiu: tancat, poc, mitjà o obert", glyph: "↗", family: "regulation", w: 220, h: 120, ports: { P: [0, 60], A: [220, 60] } },
+  flowRegulatorOneWay: { label: "Regulador unidireccional", short: "REGULADOR + ANTIRETORN", hint: "Regula un sentit i deixa lliure el retorn", glyph: "↗", family: "regulation", w: 240, h: 130, ports: { P: [0, 65], A: [240, 65] } },
   valve2: { label: "Vàlvula 2/2 NC", short: "2/2 NC", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0] } },
   valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Accionament manual", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
   valve4: { label: "Vàlvula 4/2", short: "4/2", hint: "Palanca · enclavament", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [165, 155] } },
   valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Accionament manual", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
+  valve53: { label: "Vàlvula 5/3 centre tancat", short: "5/3", hint: "Tres posicions; centre tancat", glyph: "⇅", family: "valves", w: 300, h: 155, ports: { P: [165, 155], A: [155, 0], B: [180, 0], R: [145, 155], S: [185, 155] } },
+  valve5Pilot: { label: "Vàlvula 5/2 de doble pilotatge", short: "5/2 PILOTADA", hint: "Canvia amb un senyal pneumàtic", glyph: "⇄", family: "valves", w: 290, h: 155, ports: { P: [155, 155], A: [145, 0], B: [170, 0], R: [135, 155], S: [175, 155], X: [0, 72], Y: [290, 72] } },
+  limitValve3: { label: "Final de cursa mecànic 3/2", short: "FINAL 3/2", hint: "S'acciona en arribar al cilindre", glyph: "⚙", family: "control", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
+  logicOr: { label: "Vàlvula lògica OR", short: "OR", hint: "La sortida s'activa amb qualsevol entrada", glyph: "∨", family: "logic", w: 220, h: 120, ports: { X: [0, 35], Y: [0, 85], A: [220, 60] } },
+  logicAnd: { label: "Vàlvula lògica AND", short: "AND", hint: "La sortida s'activa amb dues entrades", glyph: "∧", family: "logic", w: 220, h: 120, ports: { X: [0, 35], Y: [0, 85], A: [220, 60] } },
+  timer3: { label: "Temporitzador pneumàtic 3/2", short: "TEMPORITZADOR", hint: "Retard qualitatiu a l'activació", glyph: "◷", family: "logic", w: 220, h: 140, ports: { P: [0, 70], A: [220, 70], R: [110, 140], X: [110, 0] } },
   single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", family: "actuators", w: 215, h: 140, ports: { A: [40, 140] } },
   double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", family: "actuators", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } }
 };
@@ -35,6 +43,26 @@ const collapsedFamilies = new Set();
 const DISTRIBUTORS = new Set(["valve2", "valve3", "valve4", "valve5"]);
 const DEFAULT_ACTUATOR = { valve2: "pushbutton", valve3: "pushbutton", valve4: "lever", valve5: "pushbutton" };
 const defaultValveProperties = type => ({ actuator: DEFAULT_ACTUATOR[type], returnMode: type === "valve2" || type === "valve3" ? "spring" : "memory" });
+function defaultProperties(type) {
+  if (DISTRIBUTORS.has(type)) return defaultValveProperties(type);
+  if (type === "valve53") return { center: "closed" };
+  if (type === "flowRegulator") return { opening: "open" };
+  if (type === "flowRegulatorOneWay") return { opening: "medium", regulatedDirection: "PtoA" };
+  if (type === "checkValve") return { direction: "PtoA" };
+  if (type === "limitValve3") return { targetCylinder: "", targetEnd: "extended" };
+  if (type === "timer3") return { delay: "medium" };
+  return {};
+}
+function normalizeProperties(type, properties = {}) {
+  if (DISTRIBUTORS.has(type)) return { actuator: ["pushbutton", "lever", "pedal"].includes(properties.actuator) ? properties.actuator : DEFAULT_ACTUATOR[type], returnMode: ["spring", "memory"].includes(properties.returnMode) ? properties.returnMode : defaultValveProperties(type).returnMode };
+  if (type === "flowRegulator") return { opening: ["closed", "low", "medium", "open"].includes(properties.opening) ? properties.opening : "open" };
+  if (type === "flowRegulatorOneWay") return { opening: ["closed", "low", "medium", "open"].includes(properties.opening) ? properties.opening : "medium", regulatedDirection: properties.regulatedDirection === "AtoP" ? "AtoP" : "PtoA" };
+  if (type === "checkValve") return { direction: properties.direction === "AtoP" ? "AtoP" : "PtoA" };
+  if (type === "valve53") return { center: "closed" };
+  if (type === "limitValve3") return { targetCylinder: typeof properties.targetCylinder === "string" ? properties.targetCylinder : "", targetEnd: properties.targetEnd === "retracted" ? "retracted" : "extended" };
+  if (type === "timer3") return { delay: ["short", "medium", "long"].includes(properties.delay) ? properties.delay : "medium" };
+  return {};
+}
 
 const $ = id => document.getElementById(id);
 const svg = (tag, attrs = {}, parent) => {
@@ -52,14 +80,20 @@ const deepCopy = value => JSON.parse(JSON.stringify(value));
 const makeId = prefix => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 const key = (componentId, portId) => `${componentId}:${portId}`;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const isCylinder = component => component?.type === "single" || component?.type === "double";
+function targetCylinderFor(component) {
+  return circuit.components.find(item => isCylinder(item) && item.id === component.properties?.targetCylinder) || circuit.components.find(isCylinder);
+}
 
 let circuit = { format: FORMAT, version: VERSION, metadata: { name: "Circuit nou" }, components: [], connections: [], view: { zoom: 1, pan: { x: 0, y: 0 } } };
 let selected = null;
 let selectedType = null;
 let pendingPort = null;
 let running = false;
-let runtime = { valves: {}, pressed: {}, cylinders: {} };
+let runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {} };
 let simulation = null;
+const timerHandles = new Map();
+let simulationRefreshPending = false;
 let history = [];
 let future = [];
 let dirty = false;
@@ -89,9 +123,14 @@ function edit(action) {
   render();
 }
 function resetRuntime() {
-  runtime = { valves: {}, pressed: {}, cylinders: {} };
+  for (const handle of timerHandles.values()) clearTimeout(handle);
+  timerHandles.clear();
+  runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {} };
   for (const component of circuit.components) {
     if (DISTRIBUTORS.has(component.type)) runtime.valves[component.id] = false;
+    if (component.type === "valve53") runtime.valves[component.id] = "center";
+    if (component.type === "valve5Pilot") runtime.valves[component.id] = false;
+    if (component.type === "timer3") runtime.timers[component.id] = false;
     if (component.type === "single" || component.type === "double") runtime.cylinders[component.id] = "retracted";
   }
   simulation = null;
@@ -107,7 +146,7 @@ function setRunning(next) {
 }
 
 function makeComponent(type, x, y) {
-  const properties = DISTRIBUTORS.has(type) ? defaultValveProperties(type) : type === "flowRegulator" ? { opening: "open" } : {};
+  const properties = defaultProperties(type);
   return { id: makeId("c"), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, properties };
 }
 function addComponent(type, x, y) {
@@ -180,7 +219,7 @@ function validateCircuit(data) {
   const name = String(data.metadata?.name || "Circuit nou").slice(0, 80);
   const zoom = Number.isFinite(data.view?.zoom) ? clamp(data.view.zoom, .55, 2.4) : 1;
   const pan = { x: Number.isFinite(data.view?.pan?.x) ? clamp(data.view.pan.x, -1500, 1500) : 0, y: Number.isFinite(data.view?.pan?.y) ? clamp(data.view.pan.y, -1000, 1000) : 0 };
-  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: DISTRIBUTORS.has(c.type) ? { actuator: ["pushbutton", "lever", "pedal"].includes(c.properties?.actuator) ? c.properties.actuator : DEFAULT_ACTUATOR[c.type], returnMode: c.properties?.returnMode === "spring" ? "spring" : c.properties?.returnMode === "memory" ? "memory" : defaultValveProperties(c.type).returnMode } : c.type === "flowRegulator" ? { opening: ["closed", "low", "medium", "open"].includes(c.properties?.opening) ? c.properties.opening : "open" } : {} })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
+  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: normalizeProperties(c.type, c.properties) })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
 }
 function downloadCircuit() {
   const text = JSON.stringify(circuit, null, 2);
@@ -212,74 +251,102 @@ function newCircuit() {
   selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render(); status("Circuit nou creat.");
 }
 
+function queueSimulationRefresh() {
+  if (simulationRefreshPending) return;
+  simulationRefreshPending = true;
+  requestAnimationFrame(() => { simulationRefreshPending = false; if (running) render(); });
+}
 function buildSimulation() {
-  const graph = new Map();
-  const rates = new Map();
-  const ensure = id => { if (!graph.has(id)) graph.set(id, new Set()); };
-  const link = (a, b, rate = 3) => { ensure(a); ensure(b); graph.get(a).add(b); graph.get(b).add(a); rates.set(`${a}\u0000${b}`, rate); rates.set(`${b}\u0000${a}`, rate); };
-  const pressureSeeds = [];
-  const exhaustSeeds = [];
+  const graph = new Map(), reverseGraph = new Map();
+  const ensure = id => { if (!graph.has(id)) graph.set(id, new Map()); if (!reverseGraph.has(id)) reverseGraph.set(id, new Map()); };
+  const direct = (a, b, rate = 3) => { if (rate <= 0) return; ensure(a); ensure(b); graph.get(a).set(b, rate); reverseGraph.get(b).set(a, rate); };
+  const link = (a, b, rate = 3) => { direct(a, b, rate); direct(b, a, rate); };
+  const linkRates = (a, b, ab, ba) => { direct(a, b, ab); direct(b, a, ba); };
+  const pressureSeeds = [], exhaustSeeds = [];
   for (const c of circuit.components) {
     for (const portId of Object.keys(TYPES[c.type].ports)) ensure(key(c.id, portId));
-    if (c.type === "source") pressureSeeds.push(key(c.id, "P"));
-    if (c.type === "receiver" || c.type === "maintenance") link(key(c.id, "P"), key(c.id, "A"));
-    if (c.type === "flowRegulator") {
-      const level = { closed: 0, low: 1, medium: 2, open: 3 }[c.properties?.opening] ?? 3;
-      if (level > 0) link(key(c.id, "P"), key(c.id, "A"), level);
+    const port = id => key(c.id, id);
+    if (c.type === "source") pressureSeeds.push(port("P"));
+    if (c.type === "receiver" || c.type === "maintenance") link(port("P"), port("A"));
+    if (c.type === "flowRegulator") link(port("P"), port("A"), ({ closed: 0, low: 1, medium: 2, open: 3 })[c.properties?.opening] ?? 3);
+    if (c.type === "checkValve") c.properties?.direction === "AtoP" ? direct(port("A"), port("P")) : direct(port("P"), port("A"));
+    if (c.type === "flowRegulatorOneWay") {
+      const rate = ({ closed: 0, low: 1, medium: 2, open: 3 })[c.properties?.opening] ?? 2;
+      if (c.properties?.regulatedDirection === "AtoP") linkRates(port("P"), port("A"), 3, rate);
+      else linkRates(port("P"), port("A"), rate, 3);
     }
-    if (c.type === "valve3" || c.type === "valve4" || c.type === "valve5") {
-      exhaustSeeds.push(key(c.id, "R"));
-      if (c.type === "valve5") exhaustSeeds.push(key(c.id, "S"));
-    }
-    const properties = { ...defaultValveProperties(c.type), ...c.properties };
-    const active = properties.returnMode === "spring" ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
-    if (c.type === "valve2" && active) link(key(c.id, "P"), key(c.id, "A"));
-    if (c.type === "valve3") {
-      if (active) link(key(c.id, "P"), key(c.id, "A"));
-      else link(key(c.id, "A"), key(c.id, "R"));
-    }
+    if (["valve3", "valve4", "valve5", "valve53", "valve5Pilot", "limitValve3", "timer3"].includes(c.type)) exhaustSeeds.push(port("R"));
+    if (["valve5", "valve53", "valve5Pilot"].includes(c.type)) exhaustSeeds.push(port("S"));
+    const active = c.properties?.returnMode === "spring" ? !!runtime.pressed[c.id] : !!runtime.valves[c.id];
+    if (c.type === "valve2" && active) link(port("P"), port("A"));
+    if (c.type === "valve3") active ? link(port("P"), port("A")) : link(port("A"), port("R"));
     if (c.type === "valve4") {
-      if (active) { link(key(c.id, "P"), key(c.id, "A")); link(key(c.id, "B"), key(c.id, "R")); }
-      else { link(key(c.id, "P"), key(c.id, "B")); link(key(c.id, "A"), key(c.id, "R")); }
+      if (active) { link(port("P"), port("A")); link(port("B"), port("R")); }
+      else { link(port("P"), port("B")); link(port("A"), port("R")); }
     }
-    if (c.type === "valve5") {
-      if (active) { link(key(c.id, "P"), key(c.id, "A")); link(key(c.id, "B"), key(c.id, "S")); }
-      else { link(key(c.id, "P"), key(c.id, "B")); link(key(c.id, "A"), key(c.id, "R")); }
+    if (c.type === "valve5" || c.type === "valve5Pilot") {
+      const pilotActive = c.type === "valve5Pilot" ? !!runtime.valves[c.id] : active;
+      if (pilotActive) { link(port("P"), port("A")); link(port("B"), port("S")); }
+      else { link(port("P"), port("B")); link(port("A"), port("R")); }
+    }
+    if (c.type === "valve53") {
+      if (runtime.valves[c.id] === "left") { link(port("P"), port("A")); link(port("B"), port("S")); }
+      if (runtime.valves[c.id] === "right") { link(port("P"), port("B")); link(port("A"), port("R")); }
+    }
+    if (c.type === "limitValve3") {
+      const targetId = targetCylinderFor(c)?.id;
+      const triggered = !!targetId && runtime.cylinders[targetId] === (c.properties?.targetEnd || "extended");
+      if (triggered) link(port("P"), port("A")); else link(port("A"), port("R"));
+    }
+    if (c.type === "timer3") {
+      if (runtime.timers[c.id]) link(port("P"), port("A")); else link(port("A"), port("R"));
     }
   }
   for (const w of circuit.connections) link(key(w.from.componentId, w.from.portId), key(w.to.componentId, w.to.portId));
-  const flood = seeds => {
-    const found = new Set(seeds);
-    const queue = [...seeds];
-    for (let i = 0; i < queue.length; i++) for (const next of graph.get(queue[i]) || []) if (!found.has(next)) { found.add(next); queue.push(next); }
+  const flood = (seeds, reverse = false) => {
+    const adjacency = reverse ? reverseGraph : graph;
+    const found = new Set(seeds), queue = [...seeds];
+    for (let i = 0; i < queue.length; i++) for (const next of (adjacency.get(queue[i]) || new Map()).keys()) if (!found.has(next)) { found.add(next); queue.push(next); }
     return found;
   };
-  const pressure = flood(pressureSeeds);
-  const exhaust = flood(exhaustSeeds);
-  const distancesFrom = seeds => {
-    const distances = new Map(seeds.map(node => [node, 0]));
-    const queue = [...seeds];
-    for (let i = 0; i < queue.length; i++) {
-      const node = queue[i];
-      for (const next of graph.get(node) || []) if (!distances.has(next)) { distances.set(next, distances.get(node) + 1); queue.push(next); }
+  let pressure = flood(pressureSeeds);
+  // Pneumatic logic gates pass pressure only after their input conditions are met.
+  for (let pass = 0; pass < circuit.components.length; pass++) {
+    let changed = false;
+    for (const c of circuit.components) {
+      if (c.type !== "logicOr" && c.type !== "logicAnd") continue;
+      const x = key(c.id, "X"), y = key(c.id, "Y"), out = key(c.id, "A");
+      const enabled = c.type === "logicOr" ? pressure.has(x) || pressure.has(y) : pressure.has(x) && pressure.has(y);
+      if (!enabled) continue;
+      const before = graph.get(x).has(out) || graph.get(y).has(out);
+      if (c.type === "logicOr") { if (pressure.has(x)) direct(x, out); if (pressure.has(y)) direct(y, out); }
+      else { direct(x, out); direct(y, out); }
+      if (!before) changed = true;
     }
+    if (!changed) break;
+    pressure = flood(pressureSeeds);
+  }
+  const exhaust = flood(exhaustSeeds, true);
+  const distancesFrom = (seeds, reverse = false) => {
+    const adjacency = reverse ? reverseGraph : graph;
+    const distances = new Map(seeds.map(node => [node, 0])), queue = [...seeds];
+    for (let i = 0; i < queue.length; i++) for (const next of (adjacency.get(queue[i]) || new Map()).keys()) if (!distances.has(next)) { distances.set(next, distances.get(queue[i]) + 1); queue.push(next); }
     return distances;
   };
-  const pressureDistances = distancesFrom(pressureSeeds);
-  const exhaustDistances = distancesFrom(exhaustSeeds);
-  const speedFlood = seeds => {
-    const levels = new Map(seeds.map(node => [node, 3]));
-    const queue = [...seeds];
+  const pressureDistances = distancesFrom(pressureSeeds), exhaustDistances = distancesFrom(exhaustSeeds, true);
+  const speedFlood = (seeds, reverse = false) => {
+    const adjacency = reverse ? reverseGraph : graph;
+    const levels = new Map(seeds.map(node => [node, 3])), queue = [...seeds];
     for (let i = 0; i < queue.length; i++) {
       const node = queue[i], level = levels.get(node);
-      for (const next of graph.get(node) || []) {
-        const nextLevel = Math.min(level, rates.get(`${node}\u0000${next}`) ?? 3);
+      for (const [next, edgeRate] of (adjacency.get(node) || new Map())) {
+        const nextLevel = Math.min(level, edgeRate);
         if (nextLevel > (levels.get(next) || 0)) { levels.set(next, nextLevel); queue.push(next); }
       }
     }
     return levels;
   };
-  const pressureSpeed = speedFlood(pressureSeeds), exhaustSpeed = speedFlood(exhaustSeeds);
+  const pressureSpeed = speedFlood(pressureSeeds), exhaustSpeed = speedFlood(exhaustSeeds, true);
   const conflicts = new Set([...pressure].filter(node => exhaust.has(node)));
   const flowDirections = {};
   for (const w of circuit.connections) {
@@ -287,15 +354,13 @@ function buildSimulation() {
     if (conflicts.has(from) || conflicts.has(to)) continue;
     if (pressure.has(from) && pressure.has(to)) {
       const a = pressureDistances.get(from), b = pressureDistances.get(to);
-      if (a < b) flowDirections[w.id] = "forward";
-      else if (b < a) flowDirections[w.id] = "reverse";
+      if (a < b) flowDirections[w.id] = "forward"; else if (b < a) flowDirections[w.id] = "reverse";
     } else if (exhaust.has(from) && exhaust.has(to)) {
       const a = exhaustDistances.get(from), b = exhaustDistances.get(to);
-      if (a > b) flowDirections[w.id] = "forward";
-      else if (b > a) flowDirections[w.id] = "reverse";
+      if (a > b) flowDirections[w.id] = "forward"; else if (b > a) flowDirections[w.id] = "reverse";
     }
   }
-  const cylinderSpeeds = {};
+  const cylinderSpeeds = {}, oldCylinders = { ...runtime.cylinders };
   for (const c of circuit.components) {
     if (c.type === "single") {
       const a = key(c.id, "A");
@@ -306,6 +371,25 @@ function buildSimulation() {
       const a = key(c.id, "A"), b = key(c.id, "B");
       if (pressure.has(a) && exhaust.has(b) && !conflicts.has(a) && !conflicts.has(b)) { runtime.cylinders[c.id] = "extended"; cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(a) || 3, exhaustSpeed.get(b) || 3); }
       else if (pressure.has(b) && exhaust.has(a) && !conflicts.has(a) && !conflicts.has(b)) { runtime.cylinders[c.id] = "retracted"; cylinderSpeeds[c.id] = Math.min(pressureSpeed.get(b) || 3, exhaustSpeed.get(a) || 3); }
+    }
+  }
+  let cylinderChanged = false;
+  for (const c of circuit.components) if ((c.type === "single" || c.type === "double") && oldCylinders[c.id] !== runtime.cylinders[c.id]) cylinderChanged = true;
+  if (cylinderChanged && circuit.components.some(c => c.type === "limitValve3")) queueSimulationRefresh();
+  for (const c of circuit.components.filter(item => item.type === "valve5Pilot")) {
+    const x = pressure.has(key(c.id, "X")), y = pressure.has(key(c.id, "Y"));
+    if (x !== y && runtime.valves[c.id] !== x) { runtime.valves[c.id] = x; queueSimulationRefresh(); }
+  }
+  for (const c of circuit.components.filter(item => item.type === "timer3")) {
+    const signal = pressure.has(key(c.id, "X"));
+    if (!signal) {
+      const handle = timerHandles.get(c.id);
+      if (handle) clearTimeout(handle);
+      timerHandles.delete(c.id);
+      runtime.timers[c.id] = false;
+    } else if (!runtime.timers[c.id] && !timerHandles.has(c.id)) {
+      const delay = ({ short: 700, medium: 1400, long: 2400 })[c.properties?.delay] || 1400;
+      timerHandles.set(c.id, setTimeout(() => { timerHandles.delete(c.id); if (running) { runtime.timers[c.id] = true; render(); } }, delay));
     }
   }
   return { pressure, exhaust, conflicts, cylinderSpeeds, flowDirections };
@@ -383,6 +467,62 @@ function drawSymbol(group, c, previousCylinderState) {
     svgText(group, 64, 116, "filtre", "sub", { "text-anchor": "middle" });
     svgText(group, 118, 116, "regulador", "sub", { "text-anchor": "middle" });
     svgText(group, 172, 116, "lubricador", "sub", { "text-anchor": "middle" });
+  } else if (c.type === "checkValve") {
+    svg("line", { x1: 0, y1: 60, x2: 220, y2: 60, class: "norm-port-line" }, group);
+    const reversed = c.properties?.direction === "AtoP";
+    svg("path", { d: reversed ? "M142 48l-24 12 24 12z M112 45v30" : "M78 48l24 12-24 12z M108 45v30", class: "symbol" }, group);
+    svgText(group, 110, 103, reversed ? "A → P" : "P → A", "sub", { "text-anchor": "middle" });
+  } else if (c.type === "flowRegulatorOneWay") {
+    svg("path", { d: "M0 51h78l22 12-22 12H0 M162 51h78 M162 51l-22 12 22 12", class: "norm-port-line" }, group);
+    svg("path", { d: "M78 51l22 12-22 12z M162 51l-22 12 22 12z", class: "symbol" }, group);
+    symbolArrow(group, 104, 91, 135, 29);
+    const opening = c.properties?.opening || "medium";
+    const label = { closed: "tancat", low: "poc", medium: "mitjà", open: "obert" }[opening] || "mitjà";
+    svgText(group, 120, 116, `${label} · retorn lliure`, "sub", { "text-anchor": "middle" });
+  } else if (c.type === "limitValve3") {
+    const targetId = targetCylinderFor(c)?.id;
+    const active = !!targetId && runtime.cylinders[targetId] === (c.properties?.targetEnd || "extended");
+    const left = svg("rect", { x: 40, y: 45, width: 60, height: 60, class: `norm-box${active ? " norm-active" : ""}` }, group);
+    svg("rect", { x: 100, y: 45, width: 60, height: 60, class: `norm-box${active ? "" : " norm-active"}` }, group);
+    symbolArrow(group, 55, 94, 65, 55); symbolCap(group, 84, 79);
+    symbolArrow(group, 125, 55, 145, 94); symbolCap(group, 115, 79);
+    for (const [x, y1, y2] of [[125, 0, 45], [115, 105, 155], [145, 105, 155]]) svg("line", { x1: x, y1, x2: x, y2, class: "norm-port-line" }, group);
+    // Rodet mecànic d'accionament.
+    svg("path", { d: "M9 75h23l9-16 M22 75a8 8 0 1 0 16 0a8 8 0 1 0-16 0", class: "symbol" }, group);
+  } else if (c.type === "logicOr" || c.type === "logicAnd") {
+    svg("line", { x1: 0, y1: 35, x2: 45, y2: 48, class: "norm-port-line" }, group);
+    svg("line", { x1: 0, y1: 85, x2: 45, y2: 72, class: "norm-port-line" }, group);
+    svg("line", { x1: 175, y1: 60, x2: 220, y2: 60, class: "norm-port-line" }, group);
+    svg("path", { d: c.type === "logicOr" ? "M45 42h72a18 18 0 0 1 0 36H45z M117 60h58" : "M45 42h52a18 18 0 0 1 0 36H45z M115 60h60", class: "symbol" }, group);
+    svgText(group, 110, 108, c.type === "logicOr" ? "passa X o Y" : "cal X i Y", "sub", { "text-anchor": "middle" });
+  } else if (c.type === "timer3") {
+    svg("line", { x1: 0, y1: 70, x2: 40, y2: 70, class: "norm-port-line" }, group);
+    svg("line", { x1: 180, y1: 70, x2: 220, y2: 70, class: "norm-port-line" }, group);
+    svg("rect", { x: 40, y: 45, width: 60, height: 50, class: `norm-box${runtime.timers[c.id] ? " norm-active" : ""}` }, group);
+    svg("rect", { x: 100, y: 45, width: 60, height: 50, class: `norm-box${runtime.timers[c.id] ? "" : " norm-active"}` }, group);
+    symbolArrow(group, 55, 86, 65, 55); symbolCap(group, 84, 73);
+    symbolArrow(group, 125, 55, 145, 86); symbolCap(group, 115, 73);
+    svg("line", { x1: 110, y1: 0, x2: 110, y2: 45, class: "norm-port-line" }, group);
+    svg("path", { d: "M110 13v13l8-6z M110 102v18 M104 120h12", class: "symbol" }, group);
+    svg("line", { x1: 110, y1: 95, x2: 110, y2: 140, class: "norm-port-line" }, group);
+    svgText(group, 110, 134, { short: "retard curt", medium: "retard mitjà", long: "retard llarg" }[c.properties?.delay || "medium"], "sub", { "text-anchor": "middle" });
+  } else if (c.type === "valve53") {
+    const state = runtime.valves[c.id] || "center";
+    for (let i = 0; i < 3; i++) svg("rect", { x: 30 + i * 60, y: 42, width: 60, height: 60, class: `norm-box${(state === "left" && i === 0) || (state === "center" && i === 1) || (state === "right" && i === 2) ? " norm-active" : ""}` }, group);
+    symbolArrow(group, 45, 91, 55, 53); symbolCap(group, 74, 76); symbolArrow(group, 75, 53, 85, 91); symbolCap(group, 65, 76);
+    symbolCap(group, 120, 53); symbolCap(group, 130, 53); symbolCap(group, 115, 84); symbolCap(group, 135, 84);
+    symbolArrow(group, 165, 91, 155, 53); symbolArrow(group, 175, 53, 185, 91); symbolCap(group, 194, 76);
+    for (const x of [155, 180]) svg("line", { x1: x, y1: 0, x2: x, y2: 42, class: "norm-port-line" }, group);
+    for (const x of [145, 165, 185]) svg("line", { x1: x, y1: 102, x2: x, y2: 155, class: "norm-port-line" }, group);
+    symbolSpring(group, 212, 72, 27); symbolSpring(group, 2, 72, 27);
+  } else if (c.type === "valve5Pilot") {
+    const active = !!runtime.valves[c.id];
+    svg("rect", { x: 50, y: 42, width: 60, height: 60, class: `norm-box${active ? " norm-active" : ""}` }, group);
+    svg("rect", { x: 110, y: 42, width: 60, height: 60, class: `norm-box${active ? "" : " norm-active"}` }, group);
+    symbolArrow(group, 65, 91, 75, 53); symbolArrow(group, 80, 53, 85, 91); symbolArrow(group, 145, 91, 155, 53); symbolArrow(group, 135, 53, 125, 91);
+    for (const x of [145, 170]) svg("line", { x1: x, y1: 0, x2: x, y2: 42, class: "norm-port-line" }, group);
+    for (const x of [135, 155, 175]) svg("line", { x1: x, y1: 102, x2: x, y2: 155, class: "norm-port-line" }, group);
+    svg("path", { d: "M2 58l12 14-12 14 M288 58l-12 14 12 14", class: "symbol" }, group);
   } else if (c.type === "flowRegulator") {
     svg("line", { x1: 0, y1: 60, x2: 220, y2: 60, class: "norm-port-line" }, group);
     svg("path", { d: "M78 48l22 12-22 12z M142 48l-22 12 22 12z", class: "symbol" }, group);
@@ -522,13 +662,36 @@ function renderInspector() {
     select.value = c.properties.returnMode || defaultValveProperties(c.type).returnMode;
     select.addEventListener("change", () => edit(() => { c.properties.returnMode = select.value; })); panel.append(select);
   }
-  if (c.type === "flowRegulator" && !running) {
-    const label = document.createElement("label"); label.className = "field-label"; label.textContent = "Obertura qualitativa"; label.htmlFor = "flowOpening"; panel.append(label);
-    const select = document.createElement("select"); select.id = "flowOpening"; select.className = "text-field";
-    for (const [value, text] of [["closed", "Tancat"], ["low", "Poc"], ["medium", "Mitjà"], ["open", "Obert"]]) { const opt = document.createElement("option"); opt.value = value; opt.textContent = text; select.append(opt); }
-    select.value = c.properties.opening || "open";
-    select.addEventListener("change", () => edit(() => { c.properties.opening = select.value; })); panel.append(select);
+  const addSelect = (id, title, options, value, onChange) => {
+    const label = document.createElement("label"); label.className = "field-label"; label.textContent = title; label.htmlFor = id; panel.append(label);
+    const select = document.createElement("select"); select.id = id; select.className = "text-field";
+    for (const [optionValue, text] of options) { const opt = document.createElement("option"); opt.value = optionValue; opt.textContent = text; select.append(opt); }
+    select.value = value; select.addEventListener("change", () => onChange(select.value)); panel.append(select);
+  };
+  const openingOptions = [["closed", "Tancat"], ["low", "Poc"], ["medium", "Mitjà"], ["open", "Obert"]];
+  if (!running && c.type === "flowRegulator") addSelect("flowOpening", "Obertura qualitativa", openingOptions, c.properties.opening || "open", value => edit(() => { c.properties.opening = value; }));
+  if (!running && c.type === "checkValve") addSelect("checkDirection", "Sentit permès", [["PtoA", "P → A"], ["AtoP", "A → P"]], c.properties.direction || "PtoA", value => edit(() => { c.properties.direction = value; }));
+  if (!running && c.type === "flowRegulatorOneWay") {
+    addSelect("oneWayOpening", "Obertura regulada", openingOptions, c.properties.opening || "medium", value => edit(() => { c.properties.opening = value; }));
+    addSelect("oneWayDirection", "Sentit regulat", [["PtoA", "P → A (retorn lliure A → P)"], ["AtoP", "A → P (retorn lliure P → A)"]], c.properties.regulatedDirection || "PtoA", value => edit(() => { c.properties.regulatedDirection = value; }));
   }
+  if (!running && c.type === "limitValve3") {
+    const cylinders = circuit.components.filter(isCylinder);
+    const currentTarget = cylinders.some(item => item.id === c.properties.targetCylinder) ? c.properties.targetCylinder : "";
+    addSelect("limitCylinder", "Cilindre supervisat", [["", "Primer cilindre"], ...cylinders.map((item, index) => [item.id, `Cilindre ${index + 1}`])], currentTarget, value => edit(() => { c.properties.targetCylinder = value; }));
+    addSelect("limitEnd", "Extrem d'accionament", [["extended", "Estès"], ["retracted", "Retret"]], c.properties.targetEnd || "extended", value => edit(() => { c.properties.targetEnd = value; }));
+  }
+  if (!running && c.type === "timer3") addSelect("timerDelay", "Retard qualitatiu", [["short", "Curt"], ["medium", "Mitjà"], ["long", "Llarg"]], c.properties.delay || "medium", value => edit(() => { c.properties.delay = value; }));
+  if (running && c.type === "valve53") {
+    const label = document.createElement("p"); label.textContent = "Tria la posició del distribuïdor."; panel.append(label);
+    for (const [position, text] of [["left", "Posició A"], ["center", "Centre tancat"], ["right", "Posició B"]]) {
+      const button = document.createElement("button"); button.className = "secondary wide"; button.textContent = text;
+      button.addEventListener("click", () => { runtime.valves[c.id] = position; render(); }); panel.append(button);
+    }
+  }
+  if (running && c.type === "limitValve3") { const target = targetCylinderFor(c); const p = document.createElement("p"); p.textContent = `Final mecànic ${target && runtime.cylinders[target.id] === (c.properties.targetEnd || "extended") ? "accionat" : "en repòs"}.`; panel.append(p); }
+  if (running && c.type === "timer3") { const p = document.createElement("p"); p.textContent = runtime.timers[c.id] ? "Retard completat; sortida activa." : timerHandles.has(c.id) ? "Retard en curs." : "En espera de senyal a X."; panel.append(p); }
+  if (running && c.type === "valve5Pilot") { const p = document.createElement("p"); p.textContent = `Posició ${runtime.valves[c.id] ? "P–A / B–S" : "P–B / A–R"}. X commuta cap a A; Y commuta cap a B.`; panel.append(p); }
   if (running && DISTRIBUTORS.has(c.type)) {
     const button = document.createElement("button"); button.className = "secondary wide";
     const properties = { ...defaultValveProperties(c.type), ...c.properties };
