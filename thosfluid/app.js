@@ -11,7 +11,9 @@ const MAX_CONNECTIONS = 160;
 
 const TYPES = {
   source: { label: "Font d'aire", short: "FONT", hint: "Pressió lògica", glyph: "◉", family: "supply", w: 105, h: 100, ports: { P: [105, 50] } },
+  valve2: { label: "Vàlvula 2/2 NC", short: "2/2 NC", hint: "Polsador · molla", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0] } },
   valve3: { label: "Vàlvula 3/2", short: "3/2", hint: "Polsador · molla", glyph: "⇄", family: "valves", w: 250, h: 155, ports: { P: [115, 155], A: [125, 0], R: [145, 155] } },
+  valve4: { label: "Vàlvula 4/2", short: "4/2", hint: "Palanca · enclavament", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [165, 155] } },
   valve5: { label: "Vàlvula 5/2", short: "5/2", hint: "Dues posicions", glyph: "⇅", family: "valves", w: 265, h: 155, ports: { P: [145, 155], A: [135, 0], B: [160, 0], R: [125, 155], S: [165, 155] } },
   single: { label: "Cilindre simple", short: "CILINDRE", hint: "Retorn per molla", glyph: "▣", family: "actuators", w: 215, h: 140, ports: { A: [40, 140] } },
   double: { label: "Cilindre doble", short: "CILINDRE", hint: "Doble efecte", glyph: "▤", family: "actuators", w: 215, h: 140, ports: { A: [40, 140], B: [130, 140] } }
@@ -83,7 +85,7 @@ function edit(action) {
 function resetRuntime() {
   runtime = { valves: {}, pressed: {}, cylinders: {} };
   for (const component of circuit.components) {
-    if (component.type === "valve5") runtime.valves[component.id] = false;
+    if (component.type === "valve4" || component.type === "valve5") runtime.valves[component.id] = false;
     if (component.type === "single" || component.type === "double") runtime.cylinders[component.id] = "retracted";
   }
   simulation = null;
@@ -94,12 +96,12 @@ function setRunning(next) {
   pendingPort = null;
   selectedType = null;
   resetRuntime();
-  status(next ? "Simulació activa. Mantén premuda la 3/2 o commuta la 5/2." : "Mode edició. Clica dos ports per connectar-los.");
+  status(next ? "Simulació activa. Acciona una vàlvula i observa els conductes." : "Mode edició. Clica dos ports per connectar-los.");
   render();
 }
 
 function makeComponent(type, x, y) {
-  return { id: makeId("c"), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, properties: type === "valve5" ? { returnMode: "memory" } : {} };
+  return { id: makeId("c"), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, properties: type === "valve4" || type === "valve5" ? { returnMode: "memory" } : {} };
 }
 function addComponent(type, x, y) {
   if (!TYPES[type] || circuit.components.length >= MAX_COMPONENTS) return status("No es poden afegir més components.");
@@ -171,7 +173,7 @@ function validateCircuit(data) {
   const name = String(data.metadata?.name || "Circuit nou").slice(0, 80);
   const zoom = Number.isFinite(data.view?.zoom) ? clamp(data.view.zoom, .55, 2.4) : 1;
   const pan = { x: Number.isFinite(data.view?.pan?.x) ? clamp(data.view.pan.x, -1500, 1500) : 0, y: Number.isFinite(data.view?.pan?.y) ? clamp(data.view.pan.y, -1000, 1000) : 0 };
-  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: c.type === "valve5" ? { returnMode: c.properties?.returnMode === "spring" ? "spring" : "memory" } : {} })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
+  return { format: FORMAT, version: VERSION, metadata: { name }, components: data.components.map(c => ({ id: c.id, type: c.type, x: c.x, y: c.y, properties: c.type === "valve4" || c.type === "valve5" ? { returnMode: c.properties?.returnMode === "spring" ? "spring" : "memory" } : {} })), connections: data.connections.map(w => ({ id: w.id, from: { componentId: w.from.componentId, portId: w.from.portId }, to: { componentId: w.to.componentId, portId: w.to.portId } })), view: { zoom, pan } };
 }
 function downloadCircuit() {
   const text = JSON.stringify(circuit, null, 2);
@@ -212,13 +214,19 @@ function buildSimulation() {
   for (const c of circuit.components) {
     for (const portId of Object.keys(TYPES[c.type].ports)) ensure(key(c.id, portId));
     if (c.type === "source") pressureSeeds.push(key(c.id, "P"));
-    if (c.type === "valve3" || c.type === "valve5") {
+    if (c.type === "valve3" || c.type === "valve4" || c.type === "valve5") {
       exhaustSeeds.push(key(c.id, "R"));
       if (c.type === "valve5") exhaustSeeds.push(key(c.id, "S"));
     }
+    if (c.type === "valve2" && runtime.pressed[c.id]) link(key(c.id, "P"), key(c.id, "A"));
     if (c.type === "valve3") {
       if (runtime.pressed[c.id]) link(key(c.id, "P"), key(c.id, "A"));
       else link(key(c.id, "A"), key(c.id, "R"));
+    }
+    if (c.type === "valve4") {
+      const active = !!runtime.valves[c.id] || !!runtime.pressed[c.id];
+      if (active) { link(key(c.id, "P"), key(c.id, "A")); link(key(c.id, "B"), key(c.id, "R")); }
+      else { link(key(c.id, "P"), key(c.id, "B")); link(key(c.id, "A"), key(c.id, "R")); }
     }
     if (c.type === "valve5") {
       const active = !!runtime.valves[c.id] || !!runtime.pressed[c.id];
@@ -237,7 +245,11 @@ function buildSimulation() {
   const exhaust = flood(exhaustSeeds);
   const conflicts = new Set([...pressure].filter(node => exhaust.has(node)));
   for (const c of circuit.components) {
-    if (c.type === "single") runtime.cylinders[c.id] = pressure.has(key(c.id, "A")) && !conflicts.has(key(c.id, "A")) ? "extended" : "retracted";
+    if (c.type === "single") {
+      const a = key(c.id, "A");
+      if (pressure.has(a) && !conflicts.has(a)) runtime.cylinders[c.id] = "extended";
+      else if (exhaust.has(a) && !conflicts.has(a)) runtime.cylinders[c.id] = "retracted";
+    }
     if (c.type === "double") {
       const a = key(c.id, "A"), b = key(c.id, "B");
       if (pressure.has(a) && exhaust.has(b) && !conflicts.has(a) && !conflicts.has(b)) runtime.cylinders[c.id] = "extended";
@@ -296,20 +308,31 @@ function drawSymbol(group, c, previousCylinderState) {
     svg("circle", { cx: 48, cy: 50, r: 13, class: "symbol" }, group);
     svg("circle", { cx: 48, cy: 50, r: 3, class: "symbol-fill" }, group);
     svg("line", { x1: 61, y1: 50, x2: 105, y2: 50, class: "norm-port-line" }, group);
-  } else if (c.type === "valve3" || c.type === "valve5") {
-    const is3 = c.type === "valve3";
-    const active = is3 ? !!runtime.pressed[c.id] : !!runtime.valves[c.id] || !!runtime.pressed[c.id];
+  } else if (["valve2", "valve3", "valve4", "valve5"].includes(c.type)) {
+    const is2 = c.type === "valve2", is3 = c.type === "valve3", is4 = c.type === "valve4";
+    const momentary = is2 || is3 || (is4 || c.type === "valve5") && c.properties.returnMode === "spring";
+    const active = momentary ? !!runtime.pressed[c.id] : !!runtime.valves[c.id] || !!runtime.pressed[c.id];
     const offset = active ? 60 : 0;
-    const left = is3 ? 40 : 50;
+    const left = is2 || is3 ? 40 : 50;
     const spool = svg("g", { transform: `translate(${offset} 0)` }, group);
     svg("rect", { x: left, y: 42, width: 60, height: 60, class: `norm-box${active ? " norm-active" : ""}` }, spool);
     svg("rect", { x: left + 60, y: 42, width: 60, height: 60, class: `norm-box${active ? "" : " norm-active"}` }, spool);
-    if (is3) {
+    if (is2) {
+      symbolArrow(spool, 55, 91, 65, 53);
+      symbolCap(spool, 125, 55); symbolCap(spool, 115, 84);
+      svg("line", { x1: 125, y1: 0, x2: 125, y2: 42, class: "norm-port-line" }, group);
+      svg("line", { x1: 115, y1: 102, x2: 115, y2: 155, class: "norm-port-line" }, group);
+    } else if (is3) {
       symbolArrow(spool, 55, 91, 65, 53); symbolCap(spool, 84, 76);
       symbolArrow(spool, 125, 53, 145, 91); symbolCap(spool, 115, 76);
       for (const [x, top] of [[125, true], [115, false], [145, false]]) {
         svg("line", { x1: x, y1: top ? 0 : 102, x2: x, y2: top ? 42 : 155, class: "norm-port-line" }, group);
       }
+    } else if (is4) {
+      symbolArrow(spool, 85, 91, 75, 53); symbolArrow(spool, 100, 53, 105, 91);
+      symbolArrow(spool, 145, 91, 160, 53); symbolArrow(spool, 135, 53, 165, 91);
+      for (const x of [135, 160]) svg("line", { x1: x, y1: 0, x2: x, y2: 42, class: "norm-port-line" }, group);
+      for (const x of [145, 165]) svg("line", { x1: x, y1: 102, x2: x, y2: 155, class: "norm-port-line" }, group);
     } else {
       symbolArrow(spool, 85, 91, 75, 53); symbolArrow(spool, 100, 53, 105, 91);
       symbolArrow(spool, 145, 91, 160, 53); symbolArrow(spool, 135, 53, 125, 91);
@@ -317,12 +340,18 @@ function drawSymbol(group, c, previousCylinderState) {
       for (const x of [125, 145, 165]) svg("line", { x1: x, y1: 102, x2: x, y2: 155, class: "norm-port-line" }, group);
     }
     // El triangle indica el port d'escapament, independentment del seu estat.
-    for (const x of is3 ? [145] : [125, 165]) svg("path", { d: `M${x - 6} 134h12l-6 9z`, class: "symbol" }, group);
-    const spring = is3 || c.properties.returnMode === "spring";
-    if (spring) symbolSpring(group, (is3 ? 164 : 174) + offset, 72, 27);
-    const button = svg("rect", { x: 4, y: 56, width: 25, height: 32, rx: 2, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": is3 ? "Mantén premut el polsador 3/2" : "Commuta la vàlvula 5/2" }, group);
-    svg("path", { d: `M29 72H${left + offset} M10 50h13 M16 50v6`, class: "symbol" }, group);
-    const trigger = e => { e.stopPropagation(); if (!running) return; if (c.type === "valve5" && c.properties.returnMode !== "spring") { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
+    for (const x of is3 ? [145] : is4 ? [165] : c.type === "valve5" ? [125, 165] : []) svg("path", { d: `M${x - 6} 134h12l-6 9z`, class: "symbol" }, group);
+    if (momentary) symbolSpring(group, (is2 || is3 ? 164 : 174) + offset, 72, 27);
+    let button;
+    const ariaLabel = is2 ? "Mantén premuda la vàlvula 2/2" : is3 ? "Mantén premut el polsador 3/2" : `Acciona la vàlvula ${is4 ? "4/2" : "5/2"}`;
+    if (is4) {
+      button = svg("circle", { cx: 15, cy: 54, r: 6, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
+      svg("path", { d: `M15 54l15 -18 M29 72H${left + offset}`, class: "symbol" }, group);
+    } else {
+      button = svg("rect", { x: 4, y: 56, width: 25, height: 32, rx: 2, class: `actuator${active ? " on" : ""}`, role: "button", tabindex: running ? "0" : "-1", "aria-label": ariaLabel }, group);
+      svg("path", { d: `M29 72H${left + offset} M10 50h13 M16 50v6`, class: "symbol" }, group);
+    }
+    const trigger = e => { e.stopPropagation(); if (!running) return; if ((is4 || c.type === "valve5") && !momentary) { runtime.valves[c.id] = !runtime.valves[c.id]; render(); } else { activeMomentaryId = c.id; runtime.pressed[c.id] = true; render(); } };
     const release = e => { e.stopPropagation(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger);
     button.addEventListener("pointerup", release);
@@ -390,17 +419,18 @@ function renderInspector() {
   $("inspectorTitle").textContent = TYPES[c.type].label;
   for (const portId of Object.keys(TYPES[c.type].ports)) { const pill = document.createElement("span"); pill.className = "pill"; pill.textContent = `${portId}: ${portState(c.id, portId) === "pressure" ? "pressió" : portState(c.id, portId) === "exhaust" ? "escapament" : "sense pressió"}`; panel.append(pill); }
   if (c.type === "single" || c.type === "double") { const p = document.createElement("p"); p.textContent = `Èmbol: ${runtime.cylinders[c.id] === "extended" ? "estès" : "retret"}`; panel.append(p); }
-  if (c.type === "valve5" && !running) {
+  if ((c.type === "valve4" || c.type === "valve5") && !running) {
     const label = document.createElement("label"); label.className = "field-label"; label.textContent = "Retorn"; label.htmlFor = "returnMode"; panel.append(label);
     const select = document.createElement("select"); select.id = "returnMode"; select.className = "text-field";
     for (const [value, text] of [["memory", "Enclavament"], ["spring", "Molla"]]) { const opt = document.createElement("option"); opt.value = value; opt.textContent = text; select.append(opt); }
     select.value = c.properties.returnMode;
     select.addEventListener("change", () => edit(() => { c.properties.returnMode = select.value; })); panel.append(select);
   }
-  if (running && (c.type === "valve3" || c.type === "valve5")) {
+  if (running && ["valve2", "valve3", "valve4", "valve5"].includes(c.type)) {
     const button = document.createElement("button"); button.className = "secondary wide";
-    button.textContent = c.type === "valve5" && c.properties.returnMode !== "spring" ? "Commuta la vàlvula" : "Mantén premut";
-    const trigger = e => { e.preventDefault(); if (c.type === "valve5" && c.properties.returnMode !== "spring") runtime.valves[c.id] = !runtime.valves[c.id]; else { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } render(); };
+    const momentary = c.type === "valve2" || c.type === "valve3" || ((c.type === "valve4" || c.type === "valve5") && c.properties.returnMode === "spring");
+    button.textContent = momentary ? "Mantén premut" : "Commuta la vàlvula";
+    const trigger = e => { e.preventDefault(); if (!momentary) runtime.valves[c.id] = !runtime.valves[c.id]; else { activeMomentaryId = c.id; runtime.pressed[c.id] = true; } render(); };
     const release = e => { e.preventDefault(); releaseMomentary(); };
     button.addEventListener("pointerdown", trigger); button.addEventListener("pointerup", release); button.addEventListener("pointercancel", release);
     button.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") trigger(e); });
@@ -419,7 +449,7 @@ function render() {
   $("circuitName").disabled = running;
   $("simulateBtn").textContent = running ? "■ Edita" : "▶ Simula";
   $("modeLabel").textContent = running ? "Mode simulació" : "Mode edició";
-  $("canvasHint").textContent = running ? "Acciona la vàlvula i observa els conductes." : "Clica dos ports per connectar-los.";
+  $("canvasHint").textContent = running ? "Acciona una vàlvula i observa els conductes." : "Clica dos ports per connectar-los.";
   $("resetBtn").disabled = !running;
   $("deleteBtn").disabled = running || !selected;
   $("undoBtn").disabled = running || !history.length;
@@ -431,17 +461,21 @@ function render() {
 }
 function loadExample(kind) {
   if (dirty && !confirm("Hi ha canvis no descarregats. Vols obrir un exemple?")) return;
+  const is2 = kind === "twoTwo", is3 = kind === "simple", is4 = kind === "fourTwo";
+  const single = is2 || is3;
   const source = { id: "font", type: "source", x: 100, y: 270, properties: {} };
-  const valve = { id: "valvula", type: kind === "simple" ? "valve3" : "valve5", x: 395, y: 255, properties: kind === "simple" ? {} : { returnMode: "memory" } };
-  const cylinder = { id: "cilindre", type: kind === "simple" ? "single" : "double", x: 800, y: 260, properties: {} };
+  const valveType = is2 ? "valve2" : is3 ? "valve3" : is4 ? "valve4" : "valve5";
+  const valve = { id: "valvula", type: valveType, x: 395, y: 255, properties: is4 || !single ? { returnMode: "memory" } : {} };
+  const cylinder = { id: "cilindre", type: single ? "single" : "double", x: 800, y: 260, properties: {} };
   const connections = [
     { id: "conducte_p", from: { componentId: "font", portId: "P" }, to: { componentId: "valvula", portId: "P" } },
     { id: "conducte_a", from: { componentId: "valvula", portId: "A" }, to: { componentId: "cilindre", portId: "A" } }
   ];
-  if (kind === "double") connections.push({ id: "conducte_b", from: { componentId: "valvula", portId: "B" }, to: { componentId: "cilindre", portId: "B" } });
-  circuit = { format: FORMAT, version: VERSION, metadata: { name: kind === "simple" ? "Exemple: cilindre simple i vàlvula 3/2" : "Exemple: cilindre doble i vàlvula 5/2" }, components: [source, valve, cylinder], connections, view: { zoom: 1, pan: { x: 0, y: 0 } } };
+  if (!single) connections.push({ id: "conducte_b", from: { componentId: "valvula", portId: "B" }, to: { componentId: "cilindre", portId: "B" } });
+  const name = is2 ? "Exemple: cilindre simple i vàlvula 2/2 NC" : is3 ? "Exemple: cilindre simple i vàlvula 3/2" : is4 ? "Exemple: cilindre doble i vàlvula 4/2" : "Exemple: cilindre doble i vàlvula 5/2";
+  circuit = { format: FORMAT, version: VERSION, metadata: { name }, components: [source, valve, cylinder], connections, view: { zoom: 1, pan: { x: 0, y: 0 } } };
   selected = null; pendingPort = null; history = []; future = []; running = false; dirty = false; resetRuntime(); storeBackup(); render();
-  status(kind === "simple" ? "Exemple 3/2 carregat. Prem Simula i mantén premut el polsador." : "Exemple 5/2 carregat. Prem Simula i commuta la vàlvula.");
+  status(`Exemple ${is2 ? "2/2" : is3 ? "3/2" : is4 ? "4/2" : "5/2"} carregat. Prem Simula i acciona la vàlvula.`);
 }
 function setupLibrary() {
   const host = $("libraryItems"); host.replaceChildren();
@@ -556,7 +590,9 @@ function setupControls() {
   $("zoomInBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom * 1.2, .55, 2.4); render(); });
   $("zoomOutBtn").addEventListener("click", () => { circuit.view.zoom = clamp(circuit.view.zoom / 1.2, .55, 2.4); render(); });
   $("fitBtn").addEventListener("click", () => { circuit.view = { zoom: 1, pan: { x: 0, y: 0 } }; render(); });
+  $("exampleValve2Btn").addEventListener("click", () => loadExample("twoTwo"));
   $("exampleSimpleBtn").addEventListener("click", () => loadExample("simple"));
+  $("exampleValve4Btn").addEventListener("click", () => loadExample("fourTwo"));
   $("exampleDoubleBtn").addEventListener("click", () => loadExample("double"));
   $("circuitName").addEventListener("change", e => { const value = e.target.value.trim().slice(0, 80) || "Circuit nou"; if (value !== circuit.metadata.name && !running) edit(() => { circuit.metadata.name = value; }); });
   $("backupToggle").addEventListener("change", e => {
