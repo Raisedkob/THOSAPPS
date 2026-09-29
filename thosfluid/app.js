@@ -110,7 +110,8 @@ let selected = null;
 let selectedType = null;
 let pendingPort = null;
 let running = false;
-let runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {} };
+// Keep every runtime group available before the library renders its symbol previews.
+let runtime = { valves: {}, pressed: {}, cylinders: {}, timers: {}, relays: {}, electrical: {} };
 let simulation = null;
 const timerHandles = new Map();
 let simulationRefreshPending = false;
