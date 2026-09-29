@@ -5,7 +5,7 @@
 **Web de destinació:** [tecno-apps.cat](https://tecno-apps.cat/)  
 **Idioma:** català a tota la interfície i la documentació funcional  
 **Públic:** ESO, batxillerat i formació professional  
-**Estat:** especificació per començar la implementació; THOSFLUID encara no està publicada
+**Estat:** MVP pneumàtic publicat a Tecno-Apps; les fases de lògica avançada i electropneumàtica continuen pendents
 
 **Font única del projecte:** el repositori `dep-tecno/THOSAPPS` a GitHub. L'especificació `THOSFLUID.md`, el codi, els símbols propis, els circuits d'exemple i les versions lliurades han de quedar versionats en aquest repositori.
 
@@ -29,17 +29,29 @@ No s'hi calculen bar, cabals reals, forces, diàmetres, velocitats físiques, p�
 
 ## 2. Integració concreta amb Tecno-Apps
 
+### Referència visual: THOSLAB
+
+THOSFLUID ha de seguir el disseny de treball de **THOSLAB v2.0**: capçalera pròpia de la suite, barra d'eines compacta amb accions agrupades, fons fosc, llenç central amb quadrícula discreta, components dibuixats sobre l'esquema, panells laterals i controls clars de zoom, fitxer i simulació. Mantenir la jerarquia visual, la mida dels controls i el llenguatge de la resta de Tecno-Apps. La semblança és d'interfície; el motor de THOSFLUID continua sent lògic i no adopta els càlculs elèctrics de THOSLAB.
+
+La portada ha d'incloure una **targeta activa THOSFLUID** amb el mateix format 16:9, etiqueta de categoria, títol, descripció i botó «Obrir aplicació» que les altres targetes. La imatge pròpia `thosfluid.svg` ha de mostrar visualment una font, una vàlvula, conductes i un cilindre sobre un fons fosc, d'acord amb les imatges de la suite. La targeta obre `thosfluid.html` i aquesta ruta ha d'oferir una app funcional.
+
+### MVP incorporat al repositori
+
+La primera versió funcional inclou `thosfluid.html`, `thosfluid-app.html`, `thosfluid/app.css`, `thosfluid/app.js` i `thosfluid.svg`. Permet col·locar i moure font, vàlvules 3/2 i 5/2 i cilindres de simple i doble efecte; connectar ports, simular la pressió i l'escapament, accionar les vàlvules, veure el moviment del cilindre, desfer/refer, fer zoom, descarregar i obrir JSON, i activar una única còpia local de recuperació. La resta de components i l'electropneumàtica s'afegeixen en les fases següents. Actualment les funcions de motor i interfície són dins d'un únic `app.js`; abans d'ampliar les seqüències cal extreure el motor en mòduls independents del DOM.
+
+**Límits del MVP:** cinc tipus de component, una connexió per port, sense nodes de derivació, rotació, exportació gràfica ni avanç pas a pas. Les posicions dels cilindres són discretes amb animació visual; encara no hi ha pilotatges, finals de cursa ni temporitzadors. El simple efecte retorna quan no rep pressió; la retenció d'una cambra aïllada s'haurà de precisar abans d'afegir vàlvules de bloqueig. Els apartats següents descriuen l'objectiu complet de V1, no una llista de funcions ja disponibles.
+
 El repositori actual publica pàgines HTML a l'arrel. `index.html` conté la navegació i les targetes de les eines; `thosdruino.html` és una aplicació en una sola pàgina; `thosvincle.html` és una pàgina d'entrada que integra `thosvincle-app.html` en un `iframe`. `sitemap.xml` enumera URL públiques. **Abans de programar, Codex ha de tornar a inspeccionar el repositori**, perquè la seva estructura pot haver canviat.
 
-Per a THOSFLUID, la ruta pública prevista és **`https://tecno-apps.cat/thosfluid.html`**. Fer servir `thosfluid.html` com a pàgina d'entrada amb la capçalera i la navegació compartides. La superfície de l'editor pot viure en `thosfluid-app.html` i en mòduls/recursos propis, mantenint els camins relatius compatibles amb l'allotjament estàtic. Aquesta separació segueix el patró existent de THOSVINCLE; si l'estat real del repositori ofereix una convenció millor, conservar la ruta pública i adaptar la implementació.
+La ruta pública publicada és **[tecno-apps.cat/thosfluid.html](https://tecno-apps.cat/thosfluid.html)**. `thosfluid.html` és la pàgina d'entrada amb la capçalera i la navegació compartides. L'editor viu a `thosfluid-app.html`, amb CSS i JavaScript propis i camins relatius compatibles amb l'allotjament estàtic. Conservar aquesta ruta en futures ampliacions.
 
-Quan l'app estigui llesta per publicar:
+Integració publicada, que cal conservar en les versions següents:
 
 1. Afegir una targeta **activa** de THOSFLUID a `index.html`, amb imatge o SVG propi, descripció en català i enllaç a `thosfluid.html`.
 2. Afegir THOSFLUID als menús compartits de les pàgines que el repositori mantingui sincronitzades, amb l'estat actiu a la seva pàgina.
 3. Afegir `https://tecno-apps.cat/thosfluid.html` a `sitemap.xml`, d'acord amb el domini públic vigent.
 4. Respectar els estils, la identitat visual, l'autoria i la llicència del repositori. Crear símbols originals o comprovar-ne les llicències abans d'incorporar recursos externs.
-5. Comprovar al navegador els enllaços, l'obertura directa de la ruta pública i la càrrega dels recursos. La publicació requereix una tasca explícita d'implementació i desplegament; aquest document no la duu a terme.
+5. Comprovar al navegador els enllaços, l'obertura directa de la ruta pública i la càrrega dels recursos després de cada publicació.
 
 No afegir una targeta «Pròximament» com a substitut de l'app funcional. No reescriure altres simuladors per integrar THOSFLUID.
 
@@ -123,60 +135,51 @@ El **circuit desat** conté components, connexions, propietats i vista. L'**esta
 {
   "format": "thosfluid-circuit",
   "version": 1,
-  "metadata": { "name": "Circuit nou", "createdAt": "2026-09-28T00:00:00Z" },
+  "metadata": { "name": "Exemple: cilindre simple i vàlvula 3/2" },
   "components": [
     {
       "id": "c1",
-      "type": "pneumatic.source",
-      "typeVersion": 1,
-      "position": { "x": 80, "y": 120 },
-      "rotation": 0,
+      "type": "source",
+      "x": 100,
+      "y": 270,
       "properties": {}
     },
     {
       "id": "c2",
-      "type": "pneumatic.valve.3_2",
-      "typeVersion": 1,
-      "position": { "x": 250, "y": 120 },
-      "rotation": 0,
-      "properties": { "normal": "NC", "actuator": "pushbutton", "return": "spring" }
+      "type": "valve3",
+      "x": 395,
+      "y": 255,
+      "properties": {}
     },
     {
       "id": "c3",
-      "type": "pneumatic.cylinder.single",
-      "typeVersion": 1,
-      "position": { "x": 440, "y": 120 },
-      "rotation": 0,
+      "type": "single",
+      "x": 800,
+      "y": 260,
       "properties": {}
     }
   ],
   "connections": [
     {
       "id": "n1",
-      "medium": "pneumatic",
-      "endpoints": [
-        { "componentId": "c1", "portId": "P" },
-        { "componentId": "c2", "portId": "P" }
-      ],
-      "route": []
+      "from": { "componentId": "c1", "portId": "P" },
+      "to": { "componentId": "c2", "portId": "P" }
     },
     {
       "id": "n2",
-      "medium": "pneumatic",
-      "endpoints": [
-        { "componentId": "c2", "portId": "A" },
-        { "componentId": "c3", "portId": "A" }
-      ],
-      "route": []
+      "from": { "componentId": "c2", "portId": "A" },
+      "to": { "componentId": "c3", "portId": "A" }
     }
   ],
   "view": { "zoom": 1, "pan": { "x": 0, "y": 0 } }
 }
 ```
 
-L'exemple il·lustra el format; els noms exactes dels tipus i les propietats s'han de fixar al registre de components. El port `R` de la 3/2 pot quedar obert a l'ambient si la seva definició l'identifica com a escapament. Els fitxers d'exemple lliurats amb l'app han de validar-se amb l'esquema definit.
+Aquest és el format **v1 del MVP publicat**. Els tipus acceptats són `source`, `valve3`, `valve5`, `single` i `double`. A `valve5`, `properties.returnMode` admet `memory` o `spring`. `from` i `to` identifiquen extrems; no imposen sentit de circulació. El medi és implícitament pneumàtic. Els ports `R` i `S` són escapaments a l'ambient segons el component. El validador limita els fitxers a 80 components i 160 connexions; l'obertura rebutja fitxers de més d'1 MB.
 
-### Contractes
+Afegir medis explícits, rotació, recorreguts o nous contractes requereix una migració documentada i compatibilitat amb els circuits v1 descarregats. No canviar silenciosament els noms ni la forma dels camps mantenint el mateix número de versió.
+
+### Contractes objectiu per a l'ampliació
 
 - `ComponentDefinition`: identificador de tipus estable, versió, família, ports, propietats permeses, posicions de vàlvula, regla de transició i representació visual.
 - `ComponentInstance`: identificador únic, tipus, posició, rotació i propietats validades.
@@ -186,7 +189,7 @@ L'exemple il·lustra el format; els noms exactes dels tipus i les propietats s'h
 
 Els valors de codi poden ser `none/present`, `none/exhaust`, `retracted/moving_forward/extended/moving_backward` i `deenergized/energized`. Són categories discretes. Les etiquetes que veu l'alumne han de ser en català i no han de suggerir mesures físiques.
 
-El JSON necessita un `version` explícit, validador d'importació i migracions quan s'ampliï l'esquema. No serialitzar funcions, referències al DOM ni objectes circulars. El circuit obert viu en la memòria de la sessió del navegador; **Desa** genera una descàrrega local i **Obre** llegeix un fitxer local. Si s'activa la recuperació, desar només l'última definició del circuit en un registre local del navegador (per exemple, IndexedDB), amb escriptures agrupades després de les edicions; no desar-hi l'estat temporal de la simulació. En obrir la pàgina, oferir la restauració, sense fer-la silenciosament. Cap circuit de l'alumnat no es desa en un servidor ni es transmet al repositori.
+El JSON necessita un `version` explícit, validador d'importació i migracions quan s'ampliï l'esquema. No serialitzar funcions, referències al DOM ni objectes circulars. El circuit obert viu en la memòria de la sessió del navegador; **Desa** genera una descàrrega local i **Obre** llegeix un fitxer local. La recuperació del MVP fa servir un únic registre `localStorage`, `thosfluid:last-circuit:v1`, i una preferència `thosfluid:backup-enabled`. Només s'actualitza si l'usuari l'ha activada; no desa l'estat temporal de la simulació. En obrir la pàgina, oferir la restauració, sense fer-la silenciosament. Cap circuit de l'alumnat no es desa en un servidor ni es transmet al repositori.
 
 ## 7. Arquitectura del motor
 
@@ -202,36 +205,40 @@ Per a cada posició d'un distribuïdor, una taula explícita de parelles de port
 
 ### Algoritme de referència
 
+Algoritme objectiu de les fases 2–3. El MVP només resol l'accessibilitat dels ports a font i escapament després d'un accionament manual. Per a automatismes, separar l'estabilització instantània de l'avanç del temps: un temporitzador i un cilindre només avancen una vegada per tick extern, mai una vegada per iteració interna.
+
 ```text
-simula(circuit, entrades, estatAnterior):
+tick(circuit, entrades, estatAnterior):
     graf = construeixGrafTipat(circuit)
     problemes = valida(graf, circuit)
     estat = iniciaOCopia(estatAnterior, entrades)
+    actualitzaFinalsDeCursaDesDePosicionsConfirmades(estat)
+    congelaPosicionsITemporitzadorsDurantLaResolucio(estat)
     signaturesVistes = conjuntBuit()
 
-    per pas de 1 fins a MAX_PASSOS_PER_TICK:
+    per iteracio de 1 fins a MAX_ITERACIONS_PER_TICK:
         signatura = serialitzaEstatCanonic(estat)
         si signatura pertany a signaturesVistes:
-            retorna avisa(estat, "El circuit oscil·la", problemes)
+            pausaSimulacio()
+            retorna avisa(estat, "El circuit oscil·la dins d'un pas", problemes)
         afegeix(signatura, signaturesVistes)
 
-        seguent = copia(estat)
-        avaluaXarxesElectriques(graf, seguent)
-        avaluaRelesSolenoidesIPilotatges(seguent)
-        actualitzaPosicionsDeValvules(graf, seguent)
-        propagaPressioIEscapament(graf, seguent)
-        actualitzaCilindresPerPassosDiscrets(seguent)
-        actualitzaFinalsDeCursa(seguent)
-        actualitzaTemporitzadorsPerTicksLogics(seguent)
+        # Tots els avaluadors llegeixen la mateixa instantània anterior.
+        propostes = avaluaDominisIRelesValvulesPilotatges(graf, estat)
+        seguent = aplicaPropostesSimultaniament(estat, propostes)
 
         si estatsEquivalents(seguent, estat):
-            retorna marcaEstable(seguent, problemes)
+            # Una única transició temporal per tick.
+            futur = avancaCilindresITemporitzadorsUnTick(seguent)
+            programaFinalsDeCursaPerAlTickSeguent(futur)
+            retorna instantania(futur, problemes)
         estat = seguent
 
+    pausaSimulacio()
     retorna avisa(estat, "No s'ha assolit un estat estable", problemes)
 ```
 
-La signatura ha de tenir un ordre estable per identificador i contenir tots els estats que afecten les regles. Limitar els passos i detectar signatures repetides per impedir bucles infinits i bloquejos de la interfície. Un circuit amb oscil·lació s'atura amb un avís i conserva una instantània inspeccionable. El temps dels temporitzadors es representa amb ticks lògics reproduïbles; la durada de l'animació és independent.
+La signatura ha de tenir un ordre estable per identificador i contenir tots els estats que afecten les regles. Limitar les iteracions (per exemple, 64 per tick) i detectar signatures repetides per impedir bucles infinits i bloquejos de la interfície. Un circuit amb oscil·lació instantània s'atura amb un avís i conserva una instantània inspeccionable. Una seqüència automàtica que es repeteix entre ticks és vàlida: no confondre-la amb manca de convergència dins d'un tick. Els temporitzadors es representen amb ticks lògics reproduïbles; la durada de l'animació és independent. Els avaluadors han de resoldre explícitament les arestes dirigides d'antiretorns i elements lògics; no convertir totes les connexions internes en unions bidireccionals.
 
 ### Semàntica funcional mínima
 
@@ -261,6 +268,8 @@ Fer servir colors **i també** patrons, icones o text per diferenciar pressió, 
 
 Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després de cada acció. Han de servir de referència durant el desenvolupament del motor i de revisió visual de l'app.
 
+**Cobertura actual:** l'app inclou exemples incorporats dels casos 1 i 2; el cas 3 es configura canviant el retorn de la 5/2 a molla. Els casos 4–10 són criteris pendents de les fases següents; encara no es poden muntar tots amb el catàleg publicat.
+
 | Núm. | Circuit | Resultat esperat |
 | --- | --- | --- |
 | 1 | Font → 3/2 NC amb polsador i molla → cilindre de simple efecte | Prémer: `P–A`, avançament. Deixar anar: `A–R`, escapament i retorn. |
@@ -280,9 +289,13 @@ Cada cas ha de tenir un circuit JSON complet i l'estat esperat abans i després 
 
 ### Fase 0 — Integració i editor
 
+Base publicada: entrada, portada, navegació, editor i fitxers locals. Les funcions avançades d'edició continuen pendents.
+
 Revisar el repositori real; crear l'entrada THOSFLUID i el llenç independent, biblioteca, selecció, connexions, desfer/refés i JSON versionat. Mantenir la ruta `thosfluid.html`. La targeta pública de l'índex s'activa quan l'app funcional estigui preparada.
 
 ### Fase 1 — MVP pneumàtic
+
+Nucli publicat amb 3/2 i 5/2, exemples i recuperació local. Queden pendents l'avanç pas a pas i completar la verificació dels tres casos i del flux d'importació en navegadors d'aula.
 
 Font, cilindres simple i doble, 3/2 i 5/2, polsador, molla, motor discret, pressió/escapament visibles i controls **Edita/Simula/Atura/Reinicia/Pas a pas**. Cobrir els circuits 1–3.
 
@@ -301,6 +314,8 @@ Polir símbols i ajudes contextuals, accessibilitat, pantalles petites, exportac
 ## 12. Estructura suggerida de fitxers
 
 Adaptar els noms i el sistema de mòduls a l'estat del repositori. Aquesta proposta manté els punts d'entrada a l'arrel, com les aplicacions actuals:
+
+En el MVP, el codi és a `thosfluid/app.js` i els estils a `thosfluid/app.css`; les carpetes següents descriuen la modularització prevista, encara no implementada.
 
 ```text
 THOSAPPS/
@@ -322,7 +337,7 @@ Si el repositori continua fent servir pàgines HTML autònomes, THOSFLUID pot te
 ## 13. Instruccions de partida per a Codex
 
 1. Obre el repositori `dep-tecno/THOSAPPS` i comprova l'estat actual d'`index.html`, la navegació de `thosdruino.html` i `thosvincle.html`, `sitemap.xml`, els estils i els requisits de desplegament.
-2. Implementa primer el circuit mínim de la fase 1 amb regles pures i dades versionades. Revisa que el polsador, la molla, la 3/2 i el cilindre de simple efecte funcionin de cap a cap abans d'ampliar el catàleg.
+2. Parteix del MVP publicat. Extreu el motor de `app.js` mantenint compatibles els JSON v1 i resol els pendents de la fase 1 abans d'ampliar el catàleg.
 3. Fes que l'editor i la simulació comparteixin només el model de circuit; el motor no ha de dependre del DOM ni dels dibuixos SVG.
 4. Documenta la posició de repòs, les connexions internes, la memòria i les ordres simultànies de cada vàlvula concreta. En cas de dubte, deixa una decisió explícita al registre del component.
 5. Mantén en català tot el text visible i tots els exemples; revisa els accents i l'ús coherent de «vàlvula», «cilindre», «conducte», «escapament» i «final de cursa».
@@ -333,7 +348,15 @@ Si el repositori continua fent servir pàgines HTML autònomes, THOSFLUID pot te
 - [Repositori THOSAPPS](https://github.com/dep-tecno/THOSAPPS)
 - [Índex i targetes](https://github.com/dep-tecno/THOSAPPS/blob/main/index.html)
 - [THOSDRUINO](https://github.com/dep-tecno/THOSAPPS/blob/main/thosdruino.html)
+- [THOSLAB, referència visual](https://github.com/dep-tecno/THOSAPPS/blob/main/thoslab.html)
 - [Patró de pàgina d'entrada de THOSVINCLE](https://github.com/dep-tecno/THOSAPPS/blob/main/thosvincle.html)
 - [Mapa del web](https://github.com/dep-tecno/THOSAPPS/blob/main/sitemap.xml)
 
-Estructura consultada el **28 de setembre de 2026**. És una referència per implementar THOSFLUID; cal tornar-la a comprovar en començar a treballar sobre el repositori.
+Estructura consultada el **28 de setembre de 2026**; document actualitzat el **29 de setembre de 2026**. Cal tornar-la a comprovar en començar una nova ampliació.
+
+## 15. Evidències de la primera publicació
+
+- Comprovació de sintaxi de JavaScript i lectura estructural dels XML/SVG completades.
+- Revisió al navegador local: muntatge d'una connexió, exemples 3/2 i 5/2, retorn del polsador, descàrrega iniciada i recuperació de l'últim circuit després de recarregar.
+- Revisió del web públic: targeta amb imatge a la portada, accés a l'app, commutació de la 5/2 i estat estès del cilindre.
+- Pendent: completar l'obertura d'un JSON descarregat mitjançant el selector de fitxers, la matriu d'accessibilitat i dispositius, i els circuits de fases futures. Aquestes comprovacions parcials no equivalen a l'acceptació completa de V1.
