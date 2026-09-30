@@ -62,6 +62,7 @@ La freqüència ha de ser positiva i comuna a tot el circuit, fixada per l’ún
 
 - **Barra superior estil THOSLAB, en una sola fila:** identitat, paleta de components i accions en aquest ordre: Connectar; Nou, Obrir i Desar; Desfer i Refer; zoom menys, percentatge de zoom, zoom més i Pan; Baixar PNG; mode i acció Simular/Aturar. Reutilitza només el llenguatge visual general de THOSLAB.
 - **Workspace central:** àrea principal per afegir, col·locar, moure i girar components i per dibuixar, editar i esborrar cables/nodes.
+- **Terminals visibles:** els dos punts de connexió de cada component es mantenen visibles com a marques petites vermelles; s’intensifiquen en mode Connectar, en passar-hi el cursor i en seleccionar l’inici d’un cable.
 - **Fitxers locals:** Obrir llegeix un circuit JSON seleccionat per l’usuari; Desar baixa el circuit actual com a JSON. No s’envien circuits a cap servidor.
 - **Vista del workspace:** zoom i desplaçament Pan canvien només la vista, no la geometria relativa ni la topologia del circuit. Baixar PNG exporta la vista actual del workspace.
 - **Historial:** Desfer i Refer recuperen canvis de circuit; no alteren zoom, desplaçament ni selecció de vista.
@@ -75,6 +76,7 @@ No cal fer desaparèixer les eines durant SIMULAR. Les accions estructurals cont
 - **Hover** consulta informació contextual. No canvia la selecció ni recalcula.
 - **Clic en un component** el selecciona; les vistes inferiors passen a mostrar aquell component quan la vista admet contextualització.
 - **Connexions:** en mode Connectar, es poden unir dos terminals; després d’iniciar un cable, clicar damunt d’un altre cable el divideix en aquell punt i hi crea un node per continuar la connexió. Clicar l’espai buit crea un extrem de cable en un node lliure. Es pot iniciar una connexió des d’un node existent per afegir-hi una altra branca.
+- En apropar el cursor a un cable mentre hi ha una connexió iniciada, el cable objectiu es ressalta i es mostra el punt exacte d’unió i una previsualització discontínua de la branca. En confirmar-la, es mostra un avís de connexió; si el cable ja pertany al node d’inici, s’indica que cal triar-ne un altre.
 - Els indicadors dels terminals són punts d’unió petits i no han de tapar ni ocultar els extrems gràfics dels símbols. Els nodes amb branques addicionals es distingeixen visualment.
 - Els cables surten dels terminals segons l’orientació actual del component i el recorregut ortogonal evita travessar el cos dels components quan hi ha un traçat lliure alternatiu. El botó «Gira 90°» i la tecla `R` giren el component seleccionat 90°; el gir és una acció d’historial.
 - Clicar un cable en mode Seleccionar l’elimina; Desfer recupera la connexió anterior. Els canvis de connexió i nodes es tracten com una sola acció d’historial per gest.
@@ -270,7 +272,7 @@ La implementació compleix aquesta especificació quan es pot verificar que:
 
 1. L’aplicació és nova, amb una sola interfície i llenguatge visual inspirat en THOSLAB, i presenta barra superior d’una fila, workspace central i targetes compactes de simulació superposades, sense dividir la pantalla.
 2. Només existeixen els components i la font de l’apartat 5; els elements passius es poden connectar en topologies RLC sèrie, paral·lel i mixtes.
-3. Cada component té terminals explícits; els terminals queden visibles sense tapar el símbol, i els nodes intermedis permeten derivar branques paral·leles i topologies mixtes. La connectivitat elèctrica queda separada de la geometria dels segments.
+3. Cada component té terminals explícits; els terminals queden visibles com a punts petits vermells sense tapar el símbol, i es ressalten en mode Connectar, en passar-hi el cursor i en seleccionar l’inici del cable. Els nodes intermedis permeten derivar branques paral·leles i topologies mixtes. En apropar-se a un cable es ressalten el cable objectiu i el punt d’ancoratge, i es veu la previsualització de la branca; en confirmar-la apareix una indicació clara. La connectivitat elèctrica queda separada de la geometria dels segments.
 4. Una font AC és obligatòria, només n’hi ha una, és sinusoidal ideal, i exposa Vrms i f amb fase fixa a zero.
 5. Valors no finits/no positius, connexions incompletes, curt circuit incompatible o sistemes no resolubles impedeixen arribar al solver o publicar una solució vàlida.
 6. Un interruptor obert no és rebutjat només pel fet d’estar obert; el circuit obert es resol quan la xarxa resultant és definida.
@@ -294,3 +296,4 @@ La implementació compleix aquesta especificació quan es pot verificar que:
 ## 13. Regla d’interpretació per al desenvolupament
 
 Quan un detall d’implementació no estigui especificat, triar la solució més simple que preservi els objectius, els límits, les fórmules i els criteris d’acceptació d’aquest document. No convertir els exemples de presentació en nous requisits funcionals. No afegir funcionalitats perquè siguin habituals en altres simuladors. Si una decisió imprescindible no es pot deduir sense ampliar l’abast, deixar-la assenyalada perquè es decideixi explícitament.
+
