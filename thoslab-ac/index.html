@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101b2d">
+  <title>THOSLAB AC</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="THOSLAB AC, inici"><span class="brand-mark">~</span><span>THOSLAB <b>AC</b></span></a>
+    <div class="topbar-tools">
+      <div class="palette" id="palette" aria-label="Components"></div>
+      <div class="toolbar-separator"></div>
+      <button class="tool-button" id="wire-btn" title="Connecta dos terminals">⌁ <span>Connectar</span></button>
+      <div class="toolbar-separator"></div>
+      <div class="toolbar-group file-tools" aria-label="Fitxer">
+        <button class="tool-button command-button" id="new-btn" title="Crea un circuit nou"><span class="button-icon">＋</span><span class="command-label">Nou</span></button>
+        <button class="tool-button command-button" id="open-btn" title="Obre un circuit JSON"><span class="button-icon">↥</span><span class="command-label">Obrir</span></button>
+        <button class="tool-button command-button" id="save-btn" title="Desa el circuit en un fitxer JSON"><span class="button-icon">▣</span><span class="command-label">Desa</span></button>
+        <input id="open-file-input" type="file" accept="application/json,.json" hidden>
+      </div>
+      <div class="toolbar-separator"></div>
+      <div class="toolbar-group history-tools" aria-label="Historial">
+        <button class="tool-button icon-button" id="undo-btn" title="Desfer" aria-label="Desfer">↶</button>
+        <button class="tool-button icon-button" id="redo-btn" title="Refer" aria-label="Refer">↷</button>
+      </div>
+      <div class="toolbar-separator"></div>
+      <div class="toolbar-group view-tools" aria-label="Vista">
+        <button class="tool-button icon-button" id="zoom-out-btn" title="Allunya" aria-label="Allunya">−</button>
+        <button class="tool-button zoom-level" id="zoom-level" title="Restableix el zoom">100%</button>
+        <button class="tool-button icon-button" id="zoom-in-btn" title="Apropa" aria-label="Apropa">＋</button>
+        <button class="tool-button command-button" id="pan-btn" title="Desplaça el workspace"><span class="button-icon">✥</span><span class="command-label">Pan</span></button>
+      </div>
+      <div class="toolbar-separator"></div>
+      <button class="tool-button command-button png-button" id="png-btn" title="Baixa una imatge PNG del circuit"><span class="button-icon">▧</span><span class="command-label">PNG</span></button>
+    </div>
+    <div class="topbar-actions">
+      <span class="mode-indicator"><span class="status-dot"></span><span id="mode-label">EDITAR</span></span>
+      <button class="button primary" id="simulate-btn">▶ <span>Simular</span></button>
+      <button class="button stop hidden" id="stop-btn">■ <span>Aturar</span></button>
+    </div>
+  </header>
+  <main class="app-shell">
+    <section class="work-area" aria-label="Espai de treball del circuit">
+      <div class="workspace" id="workspace">
+        <div class="workspace-grid"></div>
+        <svg id="wires-layer" class="wires-layer" aria-hidden="true"></svg>
+        <div id="components-layer" class="components-layer"></div>
+        <div class="hover-info hidden" id="hover-info" role="status"></div>
+        <div class="workspace-empty" id="empty-state"><div class="empty-symbol">~</div><strong>Comença a construir el circuit</strong><span>Afegeix una font i components; després connecta’n els terminals.</span></div>
+        <div class="floating-panel hidden" id="inspector" aria-label="Propietats del component"></div>
+        <div class="toast hidden" id="toast" role="status"></div>
+      </div>
+      <footer class="workspace-footer"><span id="tool-hint">Tria un component per afegir-lo al circuit</span><span id="circuit-count">0 components · 0 connexions</span></footer>
+      <section class="analysis-area hidden" id="analysis-area" aria-label="Targetes d’anàlisi">
+        <div class="cards-dock-head"><strong>Resultats de la simulació</strong><button id="collapse-analysis" title="Plega les targetes">⌄</button></div>
+        <div class="analysis-card-row">
+          <article class="analysis-card" data-card="scope"><button class="analysis-card-head" data-expand="scope">〰 Scope <span>Ampliar</span></button><div class="analysis-card-body" id="scope-card-content"></div></article>
+          <article class="analysis-card" data-card="phasors"><button class="analysis-card-head" data-expand="phasors">↗ Fasors <span>Ampliar</span></button><div class="analysis-card-body" id="phasors-card-content"></div></article>
+          <article class="analysis-card" data-card="analysis"><button class="analysis-card-head" data-expand="analysis">Σ Anàlisi <span>Ampliar</span></button><div class="analysis-card-body" id="analysis-card-content"></div></article>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+<title id="title">THOSLAB AC</title><desc id="desc">Circuit RLC en corrent altern amb ona sinusoidal</desc>
+<defs><linearGradient id="bg" x2="0" y2="1"><stop stop-color="#14263a"/><stop offset="1" stop-color="#0b1523"/></linearGradient><radialGradient id="glow"><stop stop-color="#48d7d2" stop-opacity=".19"/><stop offset="1" stop-color="#48d7d2" stop-opacity="0"/></radialGradient></defs>
+<rect width="640" height="360" rx="20" fill="url(#bg)"/><ellipse cx="322" cy="168" rx="260" ry="175" fill="url(#glow)"/>
+<text x="34" y="49" fill="#dce8f3" font-family="system-ui,sans-serif" font-size="21" font-weight="800" letter-spacing="2">THOSLAB <tspan fill="#48d7d2">AC</tspan></text>
+<text x="36" y="76" fill="#91a6bb" font-family="system-ui,sans-serif" font-size="12" letter-spacing="1.5">SIMULADOR DIDÀCTIC DE CORRENT ALTERN</text>
+<g fill="none" stroke="#c3d7e7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+<path d="M104 150H205 M273 150H342 M415 150H518V262H104V150"/><circle cx="104" cy="206" r="56"/>
+<path d="M75 208c10-31 19-31 29 0s19 31 29 0"/><path d="M205 150l12-17 18 34 18-34 20 34"/>
+<path d="M342 150c0-14 17-14 17 0s17 14 17 0 17-14 17 0 17 14 17 0"/><path d="M518 150v42m-17 0h34m-34 17h34v53"/>
+</g>
+<g fill="#48d7d2" font-family="ui-monospace,monospace" font-size="16" font-weight="700"><text x="232" y="115">R</text><text x="375" y="115">L</text><text x="530" y="220">C</text></g>
+<path d="M320 302c16-22 32-22 48 0s32 22 48 0 32-22 48 0 32 22 48 0" fill="none" stroke="#48d7d2" stroke-width="3" opacity=".75"/>
+<text x="320" y="337" fill="#91a6bb" text-anchor="middle" font-family="ui-monospace,monospace" font-size="12">RMS · FASORS · RLC</text></svg>
